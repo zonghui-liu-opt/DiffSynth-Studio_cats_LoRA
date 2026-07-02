@@ -17,6 +17,7 @@
 *.msc
 *.mv
 log*.txt
+!log.txt
 AGENTS.md
 
 # Byte-compiled / optimized / DLL files

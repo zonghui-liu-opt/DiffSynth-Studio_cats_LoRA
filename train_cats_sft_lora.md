@@ -1,0 +1,113 @@
+# 猫视频 LoRA SFT 内网训练命令
+
+## 1. 准备路径
+
+```bash
+export MODEL_ROOT=/path/to/local/wan
+export TOKENIZER_PATH=$MODEL_ROOT/google/umt5-xxl
+export DATA_ROOT=/path/to/dataset
+```
+
+`MODEL_ROOT` 必须包含：
+
+- `diffusion_pytorch_model*.safetensors`
+- `models_t5_umt5-xxl-enc-bf16.pth`
+- `Wan2.2_VAE.pth`
+- `google/umt5-xxl/`
+
+## 2. 检查数据
+
+```bash
+python3 check_dataset.py \
+  --dataset_root "$DATA_ROOT" \
+  --metadata_path "$DATA_ROOT/metadata.csv" \
+  --height 480 \
+  --width 832 \
+  --num_frames 121
+```
+
+确认：
+
+- `bad_samples: 0`
+- 生成了 `$DATA_ROOT/metadata_fixed.csv`
+- 输出的 `recommended_height`、`recommended_width` 与训练参数一致
+
+如真实分辨率是 `832x480`，把后续命令里的 `HEIGHT/WIDTH` 对调。
+
+## 3. 冒烟训练
+
+先取 16 条数据：
+
+```bash
+python3 - <<'PY'
+import pandas as pd
+from pathlib import Path
+
+root = Path("/path/to/dataset")
+pd.read_csv(root / "metadata_fixed.csv").head(16).to_csv(root / "metadata_smoke16.csv", index=False)
+PY
+```
+
+跑 2 卡小测试：
+
+```bash
+MODEL_ROOT=$MODEL_ROOT \
+TOKENIZER_PATH=$TOKENIZER_PATH \
+DATA_ROOT=$DATA_ROOT \
+METADATA_PATH=$DATA_ROOT/metadata_smoke16.csv \
+OUTPUT_ROOT=./models/train/cats_Wan2.2-TI2V-5B_lora_smoke \
+NUM_GPUS=2 \
+HEIGHT=480 WIDTH=832 NUM_FRAMES=121 \
+NUM_EPOCHS=1 DATASET_REPEAT=3 DATASET_NUM_WORKERS=4 \
+bash train_ti2v5b_lora.sh
+```
+
+检查：
+
+```bash
+ls ./models/train/cats_Wan2.2-TI2V-5B_lora_smoke
+tail -n 5 ./models/train/cats_Wan2.2-TI2V-5B_lora_smoke/metrics.jsonl
+```
+
+应看到：
+
+- `epoch-0.safetensors`
+- `metrics.jsonl`
+- `training_args.json`
+
+## 4. 正式训练
+
+```bash
+MODEL_ROOT=$MODEL_ROOT \
+TOKENIZER_PATH=$TOKENIZER_PATH \
+DATA_ROOT=$DATA_ROOT \
+METADATA_PATH=$DATA_ROOT/metadata_fixed.csv \
+OUTPUT_ROOT=./models/train/cats_Wan2.2-TI2V-5B_lora \
+NUM_GPUS=4 \
+HEIGHT=480 WIDTH=832 NUM_FRAMES=121 \
+NUM_EPOCHS=5 DATASET_REPEAT=1 DATASET_NUM_WORKERS=8 \
+bash train_ti2v5b_lora.sh
+```
+
+只改变量，不改代码。
+
+## 5. 看训练曲线
+
+```bash
+python3 plot_metrics.py \
+  --metrics_path ./models/train/cats_Wan2.2-TI2V-5B_lora/metrics.jsonl \
+  --output_dir ./models/train/cats_Wan2.2-TI2V-5B_lora/plots
+```
+
+查看：
+
+- `plots/loss.png`
+- `plots/throughput.png`
+- 终端输出的 tokens/s 和 videos/hour
+
+## 6. 常见回退
+
+- OOM：先降 `NUM_FRAMES` 或分辨率确认链路，再恢复正式参数。
+- GPU 利用率周期性掉底：增大 `DATASET_NUM_WORKERS`。
+- DDP 报 unused parameters：在 `train_ti2v5b_lora.sh` 的训练参数中临时追加 `--find_unused_parameters`。
+- `metadata.csv` 读取异常：训练一律改用 `metadata_fixed.csv`。
