@@ -152,6 +152,7 @@ if __name__ == "__main__":
             num_frames=args.num_frames,
             time_division_factor=4 if not args.framewise_decoding else 1,
             time_division_remainder=1 if not args.framewise_decoding else 0,
+            resize_mode="bucket" if args.enable_orientation_buckets else "crop",
         ),
         special_operator_map={
             "animate_face_video": ToAbsolutePath(args.dataset_base_path) >> LoadVideo(args.num_frames, 4, 1, frame_processor=ImageCropAndResize(512, 512, None, 16, 16)),

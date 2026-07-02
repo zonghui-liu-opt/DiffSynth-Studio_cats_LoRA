@@ -16,6 +16,7 @@ DATASET_REPEAT=${DATASET_REPEAT:-1}
 DATASET_NUM_WORKERS=${DATASET_NUM_WORKERS:-4}
 GRADIENT_ACCUMULATION_STEPS=${GRADIENT_ACCUMULATION_STEPS:-1}
 METRICS_PATH=${METRICS_PATH:-$OUTPUT_ROOT/metrics.jsonl}
+ENABLE_ORIENTATION_BUCKETS=${ENABLE_ORIENTATION_BUCKETS:-1}
 # ===============================================================
 
 DIT_PATHS=("${MODEL_ROOT}"/diffusion_pytorch_model*.safetensors)
@@ -57,6 +58,11 @@ PY
 mkdir -p "$OUTPUT_ROOT"
 export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
 
+BUCKET_ARGS=()
+if [ "$ENABLE_ORIENTATION_BUCKETS" = "1" ]; then
+  BUCKET_ARGS+=(--enable_orientation_buckets)
+fi
+
 accelerate launch --num_processes "$NUM_GPUS" --mixed_precision bf16 \
   examples/wanvideo/model_training/train.py \
   --dataset_base_path "$DATA_ROOT" \
@@ -65,6 +71,7 @@ accelerate launch --num_processes "$NUM_GPUS" --mixed_precision bf16 \
   --height "$HEIGHT" \
   --width "$WIDTH" \
   --num_frames "$NUM_FRAMES" \
+  "${BUCKET_ARGS[@]}" \
   --dataset_repeat "$DATASET_REPEAT" \
   --dataset_num_workers "$DATASET_NUM_WORKERS" \
   --model_paths "$MODEL_PATHS_JSON" \

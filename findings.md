@@ -18,7 +18,10 @@
 - `--model_paths` 接收 JSON 列表，经 `DiffusionTrainingModule.parse_model_configs()` 转为 `ModelConfig(path=...)`，不会触发下载；Stage B 无外网应使用此参数加载本地 DiT/T5/VAE。
 - `--model_id_with_origin_paths` 会转为 `ModelConfig(model_id=..., origin_file_pattern=...)`，`ModelConfig.download_if_necessary()` 默认从 ModelScope/HF 下载，不适合 Stage B 无外网。
 - 直接执行 `python examples/wanvideo/model_training/train.py --help` 时，当前 Python 不会自动把仓库根加入 import 路径；`PYTHONPATH=.` 可正常列出 `--metrics_path` 等参数，训练 launcher 已导出 `PYTHONPATH="$(pwd):..."`。
-- `tests/test_dataset_smoke.py` 证明 Mac CPU 环境可直接 import `UnifiedDataset` 并加载 `video`、`prompt`、`input_image`。
+- 当前 Mac CPU 测试可直接 import `UnifiedDataset`，并通过 orientation bucket 单测覆盖图片路径加载、`input_image` 加载和 metadata 处理。
+- 当前 DataLoader 使用 `collate_fn=lambda x: x[0]`，每个 micro-step 实际仍是单样本 forward；因此横竖屏 bucket 支持应优先保持现有训练语义，不直接改成 dense tensor batch。
+- 横屏 `480x832` 与竖屏 `832x480` token 数相同；metrics 继续用横屏 `height,width` 计算 tokens 不影响吞吐统计。
+- `ImageCropAndResize` 会 scale 后 center crop，不适合把竖屏猫视频强制转为横屏训练；新增 no-crop orientation resize 比修改旧算子更稳妥。
 
 ## 技术决策
 | 决策 | 理由 |
@@ -29,6 +32,9 @@
 | `check_dataset.py` 对 tab metadata 输出 `metadata_fixed.csv` | 当前 `UnifiedDataset` 的 CSV 读取不兼容 tab |
 | `train_ti2v5b_lora.sh` 显式传 `--data_file_keys "video,input_image"` 并备注当前 trainer 使用视频首帧 | 真实数据列可被加载；同时保留官方 TI2V 现有条件图逻辑 |
 | TI2V `input_image` 分支优先使用已加载的 `data["input_image"][0]`，否则回退 `data["video"][0]` | 让真实 metadata 的首帧条件图生效，同时保留官方示例缺少该列时的行为 |
+| 横竖屏采用 `--enable_orientation_buckets` 显式开启 | 默认保留上游 center-crop 行为；内网 launcher 默认开启以匹配当前真实数据 |
+| `check_dataset.py` 始终输出 `metadata_fixed.csv` | 即使原 metadata 已是逗号分隔，也需要追加 `height,width,bucket` 供 bucket sampler 使用 |
+| 新增 `ImageResizeToBucketResolution` 而不是改 `ImageCropAndResize` | 避免影响其他模型/示例的既有裁剪语义 |
 
 ## 遇到的问题
 | 问题 | 解决方案 |

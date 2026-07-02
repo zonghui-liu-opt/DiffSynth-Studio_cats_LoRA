@@ -43,17 +43,24 @@ class UnifiedDataset(torch.utils.data.Dataset):
         height_division_factor=16, width_division_factor=16,
         num_frames=81, time_division_factor=4, time_division_remainder=1,
         frame_rate=24, fix_frame_rate=False,
+        resize_mode="crop",
     ):
+        if resize_mode == "crop":
+            frame_processor = ImageCropAndResize(height, width, max_pixels, height_division_factor, width_division_factor)
+        elif resize_mode == "bucket":
+            frame_processor = ImageResizeToBucketResolution(height, width)
+        else:
+            raise ValueError(f"Unsupported resize_mode: {resize_mode}")
         return RouteByType(operator_map=[
             (str, ToAbsolutePath(base_path) >> RouteByExtensionName(operator_map=[
-                (("jpg", "jpeg", "png", "webp", "bmp"), LoadImage() >> ImageCropAndResize(height, width, max_pixels, height_division_factor, width_division_factor) >> ToList()),
+                (("jpg", "jpeg", "png", "webp", "bmp"), LoadImage() >> frame_processor >> ToList()),
                 (("gif",), LoadGIF(
                     num_frames, time_division_factor, time_division_remainder,
-                    frame_processor=ImageCropAndResize(height, width, max_pixels, height_division_factor, width_division_factor),
+                    frame_processor=frame_processor,
                 )),
                 (("mp4", "avi", "mov", "wmv", "mkv", "flv", "webm"), LoadVideo(
                     num_frames, time_division_factor, time_division_remainder,
-                    frame_processor=ImageCropAndResize(height, width, max_pixels, height_division_factor, width_division_factor),
+                    frame_processor=frame_processor,
                     frame_rate=frame_rate, fix_frame_rate=fix_frame_rate,
                 )),
             ])),

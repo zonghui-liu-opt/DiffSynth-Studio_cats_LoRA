@@ -49,6 +49,17 @@
 - [x] 视远端状态提交并推送 GitHub
 - **状态：** complete
 
+### 阶段 6：横竖屏分桶训练
+- [x] 增加横屏/竖屏 metadata debug 单测
+- [x] `check_dataset.py` 输出 `height,width,bucket` 与 `bucket_counts`
+- [x] 增加 no-crop orientation resize 算子
+- [x] 增加 orientation bucket sampler
+- [x] Wan 训练入口增加 `--enable_orientation_buckets`
+- [x] H100 launcher 默认启用 orientation buckets
+- [x] 更新内网上机文档与日志
+- [x] 跑完本地相关测试
+- **状态：** complete
+
 ## 关键问题
 1. `train.py` 是否已有本地权重参数，参数名和传参形式是什么？答：已有 `--model_paths`，JSON 列表，本地 path/glob。
 2. `input_image` 是否需要加入 `--data_file_keys`？答：建议显式加入以加载真实列，但当前 TI2V trainer 仍用 `data["video"][0]`。
@@ -60,6 +71,7 @@
 |------|------|
 | 任务书作为已批准实现规格 | 用户明确要求逐步精确完成任务，不再额外阻塞等待设计确认 |
 | 所有新增工具模块保持 CPU-only/import-safe | 任务硬性约束要求 Stage A 无 GPU/权重可验证 |
+| 横竖屏采用 orientation bucket，不做 dense tensor 混 batch | 当前训练框架默认每个 micro-step 单样本；bucket 方案在不重写 Wan forward 的前提下保留横屏 `480x832` 和竖屏 `832x480` |
 
 ## 遇到的错误
 | 错误 | 尝试次数 | 解决方案 |

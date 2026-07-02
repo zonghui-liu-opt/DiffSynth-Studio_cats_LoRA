@@ -30,9 +30,10 @@ python3 check_dataset.py \
 
 - `bad_samples: 0`
 - 生成了 `$DATA_ROOT/metadata_fixed.csv`
-- 输出的 `recommended_height`、`recommended_width` 与训练参数一致
+- 输出包含 `resolution_counts` 和 `bucket_counts`
+- `$DATA_ROOT/metadata_fixed.csv` 包含 `height,width,bucket`
 
-如真实分辨率是 `832x480`，把后续命令里的 `HEIGHT/WIDTH` 对调。
+后续命令里的 `HEIGHT/WIDTH` 始终表示横屏 bucket：`480x832`。竖屏样本由 bucket 机制自动使用 `832x480`，不再 center crop 成横屏。
 
 ## 3. 冒烟训练
 
@@ -44,7 +45,12 @@ import pandas as pd
 from pathlib import Path
 
 root = Path("/path/to/dataset")
-pd.read_csv(root / "metadata_fixed.csv").head(16).to_csv(root / "metadata_smoke16.csv", index=False)
+df = pd.read_csv(root / "metadata_fixed.csv")
+if "bucket" in df:
+    smoke = pd.concat([group.head(8) for _, group in df.groupby("bucket", sort=False)])
+else:
+    smoke = df.head(16)
+smoke.head(16).to_csv(root / "metadata_smoke16.csv", index=False)
 PY
 ```
 
@@ -58,6 +64,7 @@ METADATA_PATH=$DATA_ROOT/metadata_smoke16.csv \
 OUTPUT_ROOT=./models/train/cats_Wan2.2-TI2V-5B_lora_smoke \
 NUM_GPUS=2 \
 HEIGHT=480 WIDTH=832 NUM_FRAMES=121 \
+ENABLE_ORIENTATION_BUCKETS=1 \
 NUM_EPOCHS=1 DATASET_REPEAT=3 DATASET_NUM_WORKERS=4 \
 bash train_ti2v5b_lora.sh
 ```
@@ -85,11 +92,12 @@ METADATA_PATH=$DATA_ROOT/metadata_fixed.csv \
 OUTPUT_ROOT=./models/train/cats_Wan2.2-TI2V-5B_lora \
 NUM_GPUS=4 \
 HEIGHT=480 WIDTH=832 NUM_FRAMES=121 \
+ENABLE_ORIENTATION_BUCKETS=1 \
 NUM_EPOCHS=5 DATASET_REPEAT=1 DATASET_NUM_WORKERS=8 \
 bash train_ti2v5b_lora.sh
 ```
 
-只改变量，不改代码。
+只改变量，不改代码。需要临时退回旧的横屏裁剪行为时，追加 `ENABLE_ORIENTATION_BUCKETS=0`。
 
 ## 5. 看训练曲线
 
@@ -111,3 +119,4 @@ python3 plot_metrics.py \
 - GPU 利用率周期性掉底：增大 `DATASET_NUM_WORKERS`。
 - DDP 报 unused parameters：在 `train_ti2v5b_lora.sh` 的训练参数中临时追加 `--find_unused_parameters`。
 - `metadata.csv` 读取异常：训练一律改用 `metadata_fixed.csv`。
+- 横竖屏混合：确认 `check_dataset.py` 输出 `bucket_counts`，训练脚本默认 `ENABLE_ORIENTATION_BUCKETS=1`。

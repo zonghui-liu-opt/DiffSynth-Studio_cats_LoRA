@@ -11,6 +11,7 @@ from metrics_utils import tokens_per_sample
 
 
 REQUIRED_COLUMNS = ("video", "prompt", "input_image")
+FIXED_COLUMNS = REQUIRED_COLUMNS + ("height", "width", "bucket")
 
 
 def detect_delimiter(metadata_path):
@@ -33,13 +34,23 @@ def read_metadata(metadata_path, delimiter):
     return rows
 
 
+def orientation_bucket(height, width):
+    return "landscape" if width >= height else "portrait"
+
+
+def bucket_resolution(bucket, landscape_height, landscape_width):
+    if bucket == "portrait":
+        return landscape_width, landscape_height
+    return landscape_height, landscape_width
+
+
 def write_fixed_metadata(metadata_path, rows):
     fixed_path = Path(metadata_path).with_name("metadata_fixed.csv")
     with fixed_path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(REQUIRED_COLUMNS))
+        writer = csv.DictWriter(handle, fieldnames=list(FIXED_COLUMNS))
         writer.writeheader()
         for row in rows:
-            writer.writerow({column: row[column] for column in REQUIRED_COLUMNS})
+            writer.writerow({column: row.get(column, "") for column in FIXED_COLUMNS})
     return fixed_path
 
 
@@ -119,12 +130,13 @@ def validate_dataset(dataset_root, metadata_path, height, width, num_frames):
     metadata_path = Path(metadata_path)
     delimiter = detect_delimiter(metadata_path)
     rows = read_metadata(metadata_path, delimiter)
-    fixed_path = write_fixed_metadata(metadata_path, rows) if delimiter == "\t" else None
 
     bad_rows = []
     stats = []
+    fixed_rows = []
     for row_id, row in enumerate(rows):
         reasons = []
+        fixed_row = {column: row[column] for column in REQUIRED_COLUMNS}
         video_path = dataset_root / row["video"]
         image_path = dataset_root / row["input_image"]
         video_stats = None
@@ -140,21 +152,29 @@ def validate_dataset(dataset_root, metadata_path, height, width, num_frames):
                 reasons.append(f"video_read_error:{exc}")
         if not image_path.exists():
             reasons.append("missing_input_image")
+        if video_stats is not None:
+            bucket = orientation_bucket(video_stats["height"], video_stats["width"])
+            target_height, target_width = bucket_resolution(bucket, height, width)
+            fixed_row.update({"height": target_height, "width": target_width, "bucket": bucket})
+        fixed_rows.append(fixed_row)
         if reasons:
             bad_rows.append({"row": row_id, "video": row["video"], "reasons": reasons})
 
+    fixed_path = write_fixed_metadata(metadata_path, fixed_rows)
     resolution_counts = Counter((item["height"], item["width"]) for item in stats)
     frame_counts = Counter(item["frames"] for item in stats)
     fps_counts = Counter(round(item["fps"], 3) for item in stats)
+    bucket_counts = Counter(orientation_bucket(item["height"], item["width"]) for item in stats)
     token_count = tokens_per_sample(num_frames=num_frames, height=height, width=width)
     return {
         "delimiter": "tab" if delimiter == "\t" else "comma",
-        "fixed_path": str(fixed_path) if fixed_path is not None else None,
+        "fixed_path": str(fixed_path),
         "total_rows": len(rows),
         "good_samples": len(rows) - len(bad_rows),
         "bad_samples": len(bad_rows),
         "bad_rows": bad_rows,
         "resolution_counts": dict(resolution_counts),
+        "bucket_counts": dict(bucket_counts),
         "frame_counts": dict(frame_counts),
         "fps_counts": dict(fps_counts),
         "recommended_height": height,
@@ -167,14 +187,14 @@ def validate_dataset(dataset_root, metadata_path, height, width, num_frames):
 def print_summary(summary):
     reason_counts = Counter(reason for row in summary["bad_rows"] for reason in row["reasons"])
     print(f"delimiter: {summary['delimiter']}")
-    if summary["fixed_path"] is not None:
-        print(f"metadata_fixed_path: {summary['fixed_path']}")
+    print(f"metadata_fixed_path: {summary['fixed_path']}")
     print(f"total_rows: {summary['total_rows']}")
     print(f"good_samples: {summary['good_samples']}")
     print(f"bad_samples: {summary['bad_samples']}")
     for reason, count in sorted(reason_counts.items()):
         print(f"{reason}: {count}")
     print(f"resolution_counts: {summary['resolution_counts']}")
+    print(f"bucket_counts: {summary['bucket_counts']}")
     print(f"frame_counts: {summary['frame_counts']}")
     print(f"fps_counts: {summary['fps_counts']}")
     print(f"recommended_height: {summary['recommended_height']}")

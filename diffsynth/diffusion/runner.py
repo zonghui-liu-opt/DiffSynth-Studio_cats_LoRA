@@ -4,6 +4,7 @@ from accelerate import Accelerator
 from .training_module import DiffusionTrainingModule
 from .logger import ModelLogger
 from diffsynth.core import OffloadTrainingManager
+from diffsynth.core.data.bucket_sampler import OrientationBucketSampler
 from metrics_utils import MetricsWriter, tokens_per_sample
 
 
@@ -29,6 +30,21 @@ def save_training_args(args):
         print(f"Training arguments saved to `{save_path}`.")
     except Exception as e:
         print(f"Warning: failed to save training arguments: {e}")
+
+
+def build_dataloader(dataset, shuffle, num_workers, args=None):
+    sampler = None
+    if getattr(args, "enable_orientation_buckets", False):
+        sampler = OrientationBucketSampler(dataset, shuffle=shuffle)
+        shuffle = False
+    dataloader = torch.utils.data.DataLoader(
+        dataset,
+        shuffle=shuffle,
+        sampler=sampler,
+        collate_fn=lambda x: x[0],
+        num_workers=num_workers,
+    )
+    return dataloader, sampler
 
 
 def launch_training_task(
@@ -65,7 +81,7 @@ def launch_training_task(
     optimizer_class = get_optimizer_class(customized_optimizer)
     optimizer = optimizer_class(model.trainable_modules(), lr=learning_rate, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer)
-    dataloader = torch.utils.data.DataLoader(dataset, shuffle=True, collate_fn=lambda x: x[0], num_workers=num_workers)
+    dataloader, sampler = build_dataloader(dataset, shuffle=True, num_workers=num_workers, args=args)
     metrics_path = getattr(args, "metrics_path", None) if args is not None else None
     metrics_writer = MetricsWriter(metrics_path) if metrics_path is not None and accelerator.is_main_process else None
     metrics_step = 0
@@ -81,6 +97,8 @@ def launch_training_task(
 
     initialize_deepspeed_gradient_checkpointing(accelerator)
     for epoch_id in range(num_epochs):
+        if sampler is not None:
+            sampler.set_epoch(epoch_id)
         for data in tqdm(dataloader):
             with accelerator.accumulate(model):
                 if dataset.load_from_cache:
@@ -131,7 +149,7 @@ def launch_data_process_task(
         enable_optimizer_cpu_offload = args.enable_optimizer_cpu_offload
         cpu_offload_split_threshold = args.cpu_offload_split_threshold
         
-    dataloader = torch.utils.data.DataLoader(dataset, shuffle=False, collate_fn=lambda x: x[0], num_workers=num_workers)
+    dataloader, sampler = build_dataloader(dataset, shuffle=False, num_workers=num_workers, args=args)
     if enable_model_cpu_offload:
         dataloader = accelerator.prepare(dataloader)
         offload_manager = OffloadTrainingManager(model, accelerator.device, enable_optimizer_cpu_offload, cpu_offload_split_threshold)
@@ -140,6 +158,8 @@ def launch_data_process_task(
         model.to(device=accelerator.device)
         model, dataloader = accelerator.prepare(model, dataloader)
     
+    if sampler is not None:
+        sampler.set_epoch(0)
     for data_id, data in enumerate(tqdm(dataloader)):
         with accelerator.accumulate(model):
             with torch.no_grad():

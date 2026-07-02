@@ -32,6 +32,40 @@
 - 测试：
   - `pytest tests/ -q`：9 passed, 2 warnings
 
+### 阶段 6：横竖屏分桶训练支持
+- **状态：** complete
+- 执行的操作：
+  - 新增 orientation bucket 单测，覆盖 `check_dataset.py` metadata 输出、no-crop resize、bucket sampler 和 argparse 开关。
+  - `check_dataset.py` 始终生成带 `height,width,bucket` 的 `metadata_fixed.csv`，并输出 `bucket_counts`。
+  - 新增 `ImageResizeToBucketResolution`，bucket 模式下横屏输出 `480x832`、竖屏输出 `832x480`，不做 center crop。
+  - 新增 `OrientationBucketSampler`，训练时按 metadata bucket 分组采样。
+  - `examples/wanvideo/model_training/train.py` 在 `--enable_orientation_buckets` 时启用 bucket/no-crop 数据处理。
+  - `train_ti2v5b_lora.sh` 新增 `ENABLE_ORIENTATION_BUCKETS`，默认启用。
+  - 更新 `NOTES.md`、`train_cats_sft_lora.md`、`log.txt`。
+- 创建/修改的文件：
+  - `tests/test_orientation_buckets.py`
+  - `check_dataset.py`
+  - `diffsynth/core/data/operators.py`
+  - `diffsynth/core/data/unified_dataset.py`
+  - `diffsynth/core/data/bucket_sampler.py`
+  - `diffsynth/core/data/__init__.py`
+  - `diffsynth/diffusion/parsers.py`
+  - `diffsynth/diffusion/runner.py`
+  - `examples/wanvideo/model_training/train.py`
+  - `train_ti2v5b_lora.sh`
+  - `NOTES.md`
+  - `train_cats_sft_lora.md`
+  - `log.txt`
+- 测试：
+  - `pytest tests/test_orientation_buckets.py -v`：6 passed
+  - `pytest tests/test_metrics_utils.py tests/test_train_metrics_argparse.py tests/test_wan_training_inputs.py tests/test_orientation_buckets.py -v`：15 passed, 2 warnings
+  - `pytest tests/ -v`：15 passed, 2 warnings
+  - `python3 -m py_compile ...`：通过
+  - `bash -n train_ti2v5b_lora.sh`：通过
+  - `PYTHONPATH=. python3 examples/wanvideo/model_training/train.py --help`：`--enable_orientation_buckets` 可见
+  - `python3 check_dataset.py --dataset_root debug_data/orientation_buckets ...`：横屏/竖屏各 1 条，`bad_samples: 0`
+  - `UnifiedDataset` 加载 `debug_data/orientation_buckets/metadata_fixed.csv`：横屏输出 `(160, 96)`，竖屏输出 `(96, 160)`
+
 ### 阶段 1：需求与源码发现
 - **状态：** complete
 - **开始时间：** 2026-07-02
@@ -97,12 +131,15 @@
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
-| pytest tests/ -v | 12 个测试 | 全部通过 | 12 passed, 2 warnings | pass |
+| pytest tests/ -v | 15 个测试 | 全部通过 | 15 passed, 2 warnings | pass |
 | py_compile | 新增脚本 + 修改训练文件 | 无语法错误 | 通过 | pass |
 | bash -n train_ti2v5b_lora.sh | 训练 launcher | 无语法错误 | 通过 | pass |
 | make_debug_dataset + check_dataset | `--with_bad_samples` | 2 条坏样本准确报出 | bad_samples: 2；insufficient_frames: 1；missing_input_image: 1 | pass |
 | fake metrics + plot_metrics | 300 行含重复 step | 2 张 PNG + 摘要 | loss.png、throughput.png 已生成 | pass |
 | train.py --help | `PYTHONPATH=.` | 关键参数可见 | `--metrics_path` 等参数可见 | pass |
+| orientation buckets | 横屏/竖屏 debug metadata | fixed metadata 含 bucket，no-crop resize，sampler 分组，repeat 不缩短 epoch | 6 passed | pass |
+| check_dataset debug data | `debug_data/orientation_buckets` | 横屏/竖屏各 1 条，0 坏样本 | bucket_counts: {'landscape': 1, 'portrait': 1} | pass |
+| UnifiedDataset debug load | `metadata_fixed.csv` + bucket resize | 横屏/竖屏按各自方向输出 | `(160,96)` 与 `(96,160)` | pass |
 | git diff --check | 当前 diff | 无 whitespace error | 通过 | pass |
 
 ## 错误日志

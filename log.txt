@@ -49,3 +49,19 @@
 
 - 本仓库后续新增或修改的 Markdown 文档默认使用中文。
 - 内容保持简要，只写操作、作用、注意事项，不写空话。
+
+11. 横竖屏 orientation bucket 机制
+    - 作用：支持 `480x832` 横屏和 `832x480` 竖屏样本在同一训练任务中按方向分桶训练。
+    - 含义：`check_dataset.py` 生成带 `height,width,bucket` 的 `metadata_fixed.csv`；`--enable_orientation_buckets` 开启后，竖屏样本 resize 到 `832x480`，不会被 center crop 成横屏。
+
+12. diffsynth/core/data/bucket_sampler.py
+    - 作用：新增 `OrientationBucketSampler`，按 metadata 中的 `bucket` 字段分组采样。
+    - 含义：保持当前单样本 micro-step 训练语义，同时保证横屏/竖屏走各自尺寸路径。
+
+13. diffsynth/core/data/operators.py
+    - 作用：新增 `ImageResizeToBucketResolution`。
+    - 含义：按图像方向直接 resize 到横屏或竖屏目标分辨率，不做中心裁剪。
+
+14. train_ti2v5b_lora.sh
+    - 作用：新增 `ENABLE_ORIENTATION_BUCKETS`，默认启用。
+    - 含义：内网真实混合分辨率数据默认按 bucket 训练；需要退回旧行为时设置 `ENABLE_ORIENTATION_BUCKETS=0`。

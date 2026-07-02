@@ -129,6 +129,36 @@ class ImageCropAndResize(DataProcessingOperator):
         return image
 
 
+class ImageResizeToBucketResolution(DataProcessingOperator):
+    def __init__(
+        self,
+        landscape_height,
+        landscape_width,
+        portrait_height=None,
+        portrait_width=None,
+    ):
+        if landscape_height is None or landscape_width is None:
+            raise ValueError("landscape_height and landscape_width are required for bucket resizing.")
+        self.landscape_height = landscape_height
+        self.landscape_width = landscape_width
+        self.portrait_height = landscape_width if portrait_height is None else portrait_height
+        self.portrait_width = landscape_height if portrait_width is None else portrait_width
+
+    def get_height_width(self, image):
+        width, height = image.size
+        if width >= height:
+            return self.landscape_height, self.landscape_width
+        return self.portrait_height, self.portrait_width
+
+    def __call__(self, data: Image.Image):
+        target_height, target_width = self.get_height_width(data)
+        return torchvision.transforms.functional.resize(
+            data,
+            (target_height, target_width),
+            interpolation=torchvision.transforms.InterpolationMode.BILINEAR,
+        )
+
+
 class ToList(DataProcessingOperator):
     def __call__(self, data):
         return [data]

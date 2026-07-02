@@ -26,11 +26,11 @@ python3 check_dataset.py \
   --num_frames 121 | tee "$DATA_ROOT/check_dataset.log"
 ```
 
-看输出里的 `recommended_height`、`recommended_width`、帧数分布和 `tokens_per_video`。训练时使用 `metadata_fixed.csv`。
+看输出里的 `resolution_counts`、`bucket_counts`、帧数分布和 `tokens_per_video`。训练时使用 `metadata_fixed.csv`；该文件会额外包含 `height,width,bucket`，横屏样本为 `480,832,landscape`，竖屏样本为 `832,480,portrait`。
 
 ## 冒烟训练
 
-先取 16 条数据跑小规模测试：
+先取 16 条数据跑小规模测试。若数据里有竖屏样本，优先从每个 bucket 各取一部分，避免冒烟只覆盖横屏：
 
 ```bash
 python3 - <<'PY'
@@ -38,7 +38,12 @@ import pandas as pd
 from pathlib import Path
 
 root = Path("/path/to/dataset")
-pd.read_csv(root / "metadata_fixed.csv").head(16).to_csv(root / "metadata_smoke16.csv", index=False)
+df = pd.read_csv(root / "metadata_fixed.csv")
+if "bucket" in df:
+    smoke = pd.concat([group.head(8) for _, group in df.groupby("bucket", sort=False)])
+else:
+    smoke = df.head(16)
+smoke.head(16).to_csv(root / "metadata_smoke16.csv", index=False)
 PY
 ```
 
@@ -50,6 +55,7 @@ METADATA_PATH=/path/to/dataset/metadata_smoke16.csv \
 OUTPUT_ROOT=./models/train/Wan2.2-TI2V-5B_lora_smoke \
 NUM_GPUS=2 \
 HEIGHT=480 WIDTH=832 NUM_FRAMES=121 \
+ENABLE_ORIENTATION_BUCKETS=1 \
 NUM_EPOCHS=1 DATASET_REPEAT=3 DATASET_NUM_WORKERS=4 \
 bash train_ti2v5b_lora.sh
 ```
@@ -72,11 +78,12 @@ METADATA_PATH=/path/to/dataset/metadata_fixed.csv \
 OUTPUT_ROOT=./models/train/Wan2.2-TI2V-5B_lora \
 NUM_GPUS=4 \
 HEIGHT=480 WIDTH=832 NUM_FRAMES=121 \
+ENABLE_ORIENTATION_BUCKETS=1 \
 NUM_EPOCHS=5 DATASET_REPEAT=1 DATASET_NUM_WORKERS=8 \
 bash train_ti2v5b_lora.sh
 ```
 
-`train_ti2v5b_lora.sh` 会导出 `PYTHONPATH=$PWD`，请从仓库根目录执行。
+`HEIGHT/WIDTH` 表示横屏 bucket 的目标尺寸。开启 `ENABLE_ORIENTATION_BUCKETS=1` 后，竖屏样本会按 `832x480` bucket 处理，不再被 center crop 成横屏。`train_ti2v5b_lora.sh` 会导出 `PYTHONPATH=$PWD`，请从仓库根目录执行。
 
 ## 指标绘图
 
@@ -97,7 +104,8 @@ python3 plot_metrics.py \
 
 - 当前训练脚本显式传 `--data_file_keys "video,input_image"`。
 - trainer 会优先使用 metadata 中的 `input_image`；没有该列时回退为视频首帧。
-- 当前 DataLoader 每个 micro step 实际只取 1 条样本，指标里的 `samples_per_step = grad_accum * world_size`。
+- 当前 DataLoader 每个 micro step 实际只取 1 条样本；bucket sampler 控制采样顺序和尺寸路径，不代表 dense tensor batch size > 1。
+- 指标里的 `samples_per_step = grad_accum * world_size`；横屏 `480x832` 和竖屏 `832x480` token 数相同。
 - 调 `DATASET_NUM_WORKERS` 时看 GPU 利用率：周期性掉底通常是解码瓶颈。
 - 600 条数据规模较小，可先跑完冒烟再决定是否启用缓存数据流程。
 
@@ -138,5 +146,7 @@ video = pipe(
 )
 save_video(video, "validate_wan22_ti2v5b_lora.mp4", fps=15, quality=5)
 ```
+
+验证竖屏 LoRA 时，把 `input_image` 换成竖屏条件图，并把 `height=832, width=480`。
 
 如果 DiT 是多分片，把单个 DiT `ModelConfig(path=...)` 换成实际分片列表。
