@@ -67,7 +67,11 @@ class WanTrainingModule(DiffusionTrainingModule):
     def parse_extra_inputs(self, data, extra_inputs, inputs_shared):
         for extra_input in extra_inputs:
             if extra_input == "input_image":
-                inputs_shared["input_image"] = data["video"][0]
+                input_image = data.get("input_image")
+                if isinstance(input_image, list) and len(input_image) > 0:
+                    inputs_shared["input_image"] = input_image[0]
+                else:
+                    inputs_shared["input_image"] = data["video"][0]
             elif extra_input == "end_image":
                 inputs_shared["end_image"] = data["video"][-1]
             elif extra_input == "reference_image" or extra_input == "vace_reference_image":

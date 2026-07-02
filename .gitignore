@@ -2,8 +2,11 @@
 /models
 /scripts
 /diffusers
+/debug_data
 /.vscode
 /.opencode
+*.jsonl
+*.png
 *.pkl
 *.safetensors
 *.pth

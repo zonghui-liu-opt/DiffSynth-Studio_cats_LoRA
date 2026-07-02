@@ -1,9 +1,10 @@
-import os, json, torch, importlib
+import os, json, time, torch, importlib
 from tqdm import tqdm
 from accelerate import Accelerator
 from .training_module import DiffusionTrainingModule
 from .logger import ModelLogger
 from diffsynth.core import OffloadTrainingManager
+from metrics_utils import MetricsWriter, tokens_per_sample
 
 
 def get_optimizer_class(customized_optimizer=None):
@@ -65,6 +66,10 @@ def launch_training_task(
     optimizer = optimizer_class(model.trainable_modules(), lr=learning_rate, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer)
     dataloader = torch.utils.data.DataLoader(dataset, shuffle=True, collate_fn=lambda x: x[0], num_workers=num_workers)
+    metrics_path = getattr(args, "metrics_path", None) if args is not None else None
+    metrics_writer = MetricsWriter(metrics_path) if metrics_path is not None and accelerator.is_main_process else None
+    metrics_step = 0
+    step_start_time = time.perf_counter()
 
     if enable_model_cpu_offload:
         optimizer, dataloader, scheduler = accelerator.prepare(optimizer, dataloader, scheduler)
@@ -89,6 +94,22 @@ def launch_training_task(
                 scheduler.step()
                 optimizer.zero_grad()
                 model_logger.on_step_end(accelerator, model, save_steps, loss=loss)
+                if metrics_writer is not None and accelerator.sync_gradients:
+                    now = time.perf_counter()
+                    metrics_step += 1
+                    # This records rank-0 local loss for low-overhead monitoring;
+                    # it is intentionally not all-reduced across ranks.
+                    loss_value = float(loss.detach().float().item())
+                    metrics_writer.write({
+                        "step": metrics_step,
+                        "epoch": epoch_id,
+                        "loss": loss_value,
+                        "step_time_sec": now - step_start_time,
+                        "tokens_per_sample": tokens_per_sample(args.num_frames, args.height, args.width),
+                        "samples_per_step": 1 * accelerator.gradient_accumulation_steps * accelerator.num_processes,
+                        "lr": optimizer.param_groups[0]["lr"],
+                    })
+                    step_start_time = time.perf_counter()
         if save_steps is None:
             model_logger.on_epoch_end(accelerator, model, epoch_id)
 
