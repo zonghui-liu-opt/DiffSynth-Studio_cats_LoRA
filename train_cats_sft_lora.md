@@ -65,6 +65,7 @@ OUTPUT_ROOT=./models/train/cats_Wan2.2-TI2V-5B_lora_smoke \
 NUM_GPUS=2 \
 HEIGHT=480 WIDTH=832 NUM_FRAMES=121 \
 ENABLE_ORIENTATION_BUCKETS=1 \
+SAVE_STEPS= \
 NUM_EPOCHS=1 DATASET_REPEAT=3 DATASET_NUM_WORKERS=4 \
 bash train_ti2v5b_lora.sh
 ```
@@ -93,11 +94,20 @@ OUTPUT_ROOT=./models/train/cats_Wan2.2-TI2V-5B_lora \
 NUM_GPUS=4 \
 HEIGHT=480 WIDTH=832 NUM_FRAMES=121 \
 ENABLE_ORIENTATION_BUCKETS=1 \
+SAVE_STEPS= \
 NUM_EPOCHS=5 DATASET_REPEAT=1 DATASET_NUM_WORKERS=8 \
 bash train_ti2v5b_lora.sh
 ```
 
 只改变量，不改代码。需要临时退回旧的横屏裁剪行为时，追加 `ENABLE_ORIENTATION_BUCKETS=0`。
+
+默认 `SAVE_STEPS=` 为空，训练每个 epoch 保存一次 `epoch-*.safetensors`。如果要按 step 保存，例如每 500 step 存一次：
+
+```bash
+SAVE_STEPS=500 bash train_ti2v5b_lora.sh
+```
+
+设置后会保存 `step-500.safetensors`、`step-1000.safetensors` 等；训练结束时如果最后 step 不是 500 的整数倍，还会额外保存最终 step ckpt。设置 `SAVE_STEPS` 后不再保存 `epoch-*.safetensors`。
 
 ## 5. 看训练曲线
 

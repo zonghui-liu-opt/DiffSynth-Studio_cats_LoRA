@@ -56,6 +56,7 @@ OUTPUT_ROOT=./models/train/Wan2.2-TI2V-5B_lora_smoke \
 NUM_GPUS=2 \
 HEIGHT=480 WIDTH=832 NUM_FRAMES=121 \
 ENABLE_ORIENTATION_BUCKETS=1 \
+SAVE_STEPS= \
 NUM_EPOCHS=1 DATASET_REPEAT=3 DATASET_NUM_WORKERS=4 \
 bash train_ti2v5b_lora.sh
 ```
@@ -79,11 +80,27 @@ OUTPUT_ROOT=./models/train/Wan2.2-TI2V-5B_lora \
 NUM_GPUS=4 \
 HEIGHT=480 WIDTH=832 NUM_FRAMES=121 \
 ENABLE_ORIENTATION_BUCKETS=1 \
+SAVE_STEPS= \
 NUM_EPOCHS=5 DATASET_REPEAT=1 DATASET_NUM_WORKERS=8 \
 bash train_ti2v5b_lora.sh
 ```
 
 `HEIGHT/WIDTH` 表示横屏 bucket 的目标尺寸。开启 `ENABLE_ORIENTATION_BUCKETS=1` 后，竖屏样本会按 `832x480` bucket 处理，不再被 center crop 成横屏。`train_ti2v5b_lora.sh` 会导出 `PYTHONPATH=$PWD`，请从仓库根目录执行。
+
+## Checkpoint 保存频率
+
+默认 `SAVE_STEPS=` 为空，此时每个 epoch 保存一次：
+
+- `epoch-0.safetensors`
+- `epoch-1.safetensors`
+
+如果要按 step 保存，在启动命令里设置：
+
+```bash
+SAVE_STEPS=500 bash train_ti2v5b_lora.sh
+```
+
+开启后会保存 `step-500.safetensors`、`step-1000.safetensors` 等；训练结束时如果最后一步不是 `SAVE_STEPS` 的整数倍，还会保存最终的 `step-{最后步数}.safetensors`。设置 `SAVE_STEPS` 后不再保存 `epoch-*.safetensors`。
 
 ## 指标绘图
 

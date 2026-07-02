@@ -66,6 +66,26 @@
   - `python3 check_dataset.py --dataset_root debug_data/orientation_buckets ...`：横屏/竖屏各 1 条，`bad_samples: 0`
   - `UnifiedDataset` 加载 `debug_data/orientation_buckets/metadata_fixed.csv`：横屏输出 `(160, 96)`，竖屏输出 `(96, 160)`
 
+### 阶段 7：Checkpoint 保存步数启动参数
+- **状态：** complete
+- 执行的操作：
+  - 新增 launcher 静态测试，锁定 `SAVE_STEPS`、`SAVE_ARGS` 和 `--save_steps` 条件传参。
+  - `train_ti2v5b_lora.sh` 顶部变量块新增 `SAVE_STEPS=${SAVE_STEPS:-}`。
+  - 当 `SAVE_STEPS` 非空时，训练命令追加 `--save_steps "$SAVE_STEPS"`；为空时保持每 epoch 保存。
+  - 更新 `NOTES.md`、`train_cats_sft_lora.md`、`log.txt`。
+- 创建/修改的文件：
+  - `tests/test_train_launcher.py`
+  - `train_ti2v5b_lora.sh`
+  - `NOTES.md`
+  - `train_cats_sft_lora.md`
+  - `log.txt`
+- 测试：
+  - `pytest tests/test_train_launcher.py -v`：1 passed
+  - `pytest tests/ -v`：16 passed, 2 warnings
+  - `bash -n train_ti2v5b_lora.sh`：通过
+  - `PYTHONPATH=. python3 examples/wanvideo/model_training/train.py --help | rg -- '--save_steps|--enable_orientation_buckets|--metrics_path'`：3 个参数可见
+  - `git diff --check`：通过
+
 ### 阶段 1：需求与源码发现
 - **状态：** complete
 - **开始时间：** 2026-07-02
@@ -131,7 +151,7 @@
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
-| pytest tests/ -v | 15 个测试 | 全部通过 | 15 passed, 2 warnings | pass |
+| pytest tests/ -v | 16 个测试 | 全部通过 | 16 passed, 2 warnings | pass |
 | py_compile | 新增脚本 + 修改训练文件 | 无语法错误 | 通过 | pass |
 | bash -n train_ti2v5b_lora.sh | 训练 launcher | 无语法错误 | 通过 | pass |
 | make_debug_dataset + check_dataset | `--with_bad_samples` | 2 条坏样本准确报出 | bad_samples: 2；insufficient_frames: 1；missing_input_image: 1 | pass |

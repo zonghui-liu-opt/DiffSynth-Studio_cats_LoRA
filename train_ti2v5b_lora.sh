@@ -12,6 +12,7 @@ HEIGHT=${HEIGHT:-480}
 WIDTH=${WIDTH:-832}
 NUM_FRAMES=${NUM_FRAMES:-121}
 NUM_EPOCHS=${NUM_EPOCHS:-5}
+SAVE_STEPS=${SAVE_STEPS:-}
 DATASET_REPEAT=${DATASET_REPEAT:-1}
 DATASET_NUM_WORKERS=${DATASET_NUM_WORKERS:-4}
 GRADIENT_ACCUMULATION_STEPS=${GRADIENT_ACCUMULATION_STEPS:-1}
@@ -63,6 +64,11 @@ if [ "$ENABLE_ORIENTATION_BUCKETS" = "1" ]; then
   BUCKET_ARGS+=(--enable_orientation_buckets)
 fi
 
+SAVE_ARGS=()
+if [ -n "$SAVE_STEPS" ]; then
+  SAVE_ARGS+=(--save_steps "$SAVE_STEPS")
+fi
+
 accelerate launch --num_processes "$NUM_GPUS" --mixed_precision bf16 \
   examples/wanvideo/model_training/train.py \
   --dataset_base_path "$DATA_ROOT" \
@@ -78,6 +84,7 @@ accelerate launch --num_processes "$NUM_GPUS" --mixed_precision bf16 \
   --tokenizer_path "$TOKENIZER_PATH" \
   --learning_rate 1e-4 \
   --num_epochs "$NUM_EPOCHS" \
+  "${SAVE_ARGS[@]}" \
   --gradient_accumulation_steps "$GRADIENT_ACCUMULATION_STEPS" \
   --remove_prefix_in_ckpt "pipe.dit." \
   --output_path "$OUTPUT_ROOT" \

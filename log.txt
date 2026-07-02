@@ -65,3 +65,7 @@
 14. train_ti2v5b_lora.sh
     - 作用：新增 `ENABLE_ORIENTATION_BUCKETS`，默认启用。
     - 含义：内网真实混合分辨率数据默认按 bucket 训练；需要退回旧行为时设置 `ENABLE_ORIENTATION_BUCKETS=0`。
+
+15. save_steps 启动参数
+    - 作用：`train_ti2v5b_lora.sh` 新增 `SAVE_STEPS`，为空时保持每 epoch 保存。
+    - 含义：设置 `SAVE_STEPS=500` 后会向训练入口传 `--save_steps 500`，按 step 保存 `step-*.safetensors`。
