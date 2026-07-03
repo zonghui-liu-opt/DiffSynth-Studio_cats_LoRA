@@ -131,19 +131,23 @@ python3 plot_metrics.py \
 训练至少产出一个 `epoch-*.safetensors` 后，用官方验证方式加载 LoRA：
 
 ```python
+import glob
 import torch
 from PIL import Image
 from diffsynth.utils.data import save_video
 from diffsynth.pipelines.wan_video import WanVideoPipeline, ModelConfig
 
 MODEL_ROOT = "/path/to/local/wan"
+DIT_PATHS = sorted(glob.glob(f"{MODEL_ROOT}/diffusion_pytorch_model*.safetensors"))
+if not DIT_PATHS:
+    raise FileNotFoundError(f"No DiT safetensors found at {MODEL_ROOT}/diffusion_pytorch_model*.safetensors")
 
 pipe = WanVideoPipeline.from_pretrained(
     torch_dtype=torch.bfloat16,
     device="cuda",
     model_configs=[
+        ModelConfig(path=DIT_PATHS),
         ModelConfig(path=f"{MODEL_ROOT}/models_t5_umt5-xxl-enc-bf16.pth"),
-        ModelConfig(path=f"{MODEL_ROOT}/diffusion_pytorch_model-00001-of-00001.safetensors"),
         ModelConfig(path=f"{MODEL_ROOT}/Wan2.2_VAE.pth"),
     ],
     tokenizer_config=ModelConfig(path=f"{MODEL_ROOT}/google/umt5-xxl"),
@@ -165,5 +169,3 @@ save_video(video, "validate_wan22_ti2v5b_lora.mp4", fps=15, quality=5)
 ```
 
 验证竖屏 LoRA 时，把 `input_image` 换成竖屏条件图，并把 `height=832, width=480`。
-
-如果 DiT 是多分片，把单个 DiT `ModelConfig(path=...)` 换成实际分片列表。
