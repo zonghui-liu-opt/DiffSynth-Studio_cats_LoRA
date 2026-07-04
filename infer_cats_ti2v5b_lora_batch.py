@@ -1,4 +1,5 @@
 import csv
+import os
 from pathlib import Path
 
 import torch
@@ -18,9 +19,11 @@ from infer_cats_ti2v5b_lora import (
 )
 
 
-DATA_ROOT = Path("/srv/workspace/Kirin_AI_Workspace/TMG_I/l00832862/datasets_project/cats")
-METADATA_PATH = DATA_ROOT / "metadata.csv"
-OUTPUT_DIR = OUTPUT_PATH
+DATA_ROOT = Path(os.environ.get("DATA_ROOT", "/srv/workspace/Kirin_AI_Workspace/TMG_I/l00832862/datasets_project/cats"))
+METADATA_PATH = Path(os.environ.get("METADATA_PATH", DATA_ROOT / "metadata.csv"))
+OUTPUT_DIR = Path(os.environ.get("OUTPUT_DIR", OUTPUT_PATH))
+FPS = int(os.environ.get("FPS", 24))
+VIDEO_QUALITY = int(os.environ.get("VIDEO_QUALITY", 5))
 
 
 def detect_delimiter(metadata_path):
@@ -92,7 +95,7 @@ def main():
             seed=SEED,
             tiled=True,
         )
-        save_video(video, str(save_path), fps=24, quality=5)
+        save_video(video, str(save_path), fps=FPS, quality=VIDEO_QUALITY)
 
 
 if __name__ == "__main__":
