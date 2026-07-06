@@ -8,8 +8,6 @@ DATA_ROOT=${DATA_ROOT:-/path/to/dataset}
 METADATA_PATH=${METADATA_PATH:-$DATA_ROOT/metadata_fixed.csv}
 OUTPUT_ROOT=${OUTPUT_ROOT:-./models/train/Wan2.2-TI2V-5B_lora}
 NUM_GPUS=${NUM_GPUS:-4}
-HEIGHT=${HEIGHT:-480}
-WIDTH=${WIDTH:-832}
 NUM_FRAMES=${NUM_FRAMES:-121}
 NUM_EPOCHS=${NUM_EPOCHS:-5}
 SAVE_STEPS=${SAVE_STEPS:-}
@@ -17,7 +15,7 @@ DATASET_REPEAT=${DATASET_REPEAT:-1}
 DATASET_NUM_WORKERS=${DATASET_NUM_WORKERS:-4}
 GRADIENT_ACCUMULATION_STEPS=${GRADIENT_ACCUMULATION_STEPS:-1}
 METRICS_PATH=${METRICS_PATH:-$OUTPUT_ROOT/metrics.jsonl}
-ENABLE_ORIENTATION_BUCKETS=${ENABLE_ORIENTATION_BUCKETS:-1}
+ENABLE_RESOLUTION_BUCKETS=${ENABLE_RESOLUTION_BUCKETS:-${ENABLE_ORIENTATION_BUCKETS:-1}}
 # ===============================================================
 
 DIT_PATHS=("${MODEL_ROOT}"/diffusion_pytorch_model*.safetensors)
@@ -60,8 +58,8 @@ mkdir -p "$OUTPUT_ROOT"
 export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
 
 BUCKET_ARGS=()
-if [ "$ENABLE_ORIENTATION_BUCKETS" = "1" ]; then
-  BUCKET_ARGS+=(--enable_orientation_buckets)
+if [ "$ENABLE_RESOLUTION_BUCKETS" = "1" ]; then
+  BUCKET_ARGS+=(--enable_resolution_buckets)
 fi
 
 SAVE_ARGS=()
@@ -74,8 +72,6 @@ accelerate launch --num_processes "$NUM_GPUS" --mixed_precision bf16 \
   --dataset_base_path "$DATA_ROOT" \
   --dataset_metadata_path "$METADATA_PATH" \
   --data_file_keys "video,input_image" \
-  --height "$HEIGHT" \
-  --width "$WIDTH" \
   --num_frames "$NUM_FRAMES" \
   "${BUCKET_ARGS[@]}" \
   --dataset_repeat "$DATASET_REPEAT" \

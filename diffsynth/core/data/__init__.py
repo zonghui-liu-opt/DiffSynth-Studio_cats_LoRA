@@ -1,2 +1,2 @@
 from .unified_dataset import UnifiedDataset
-from .bucket_sampler import OrientationBucketSampler
+from .bucket_sampler import OrientationBucketSampler, ResolutionBucketSampler

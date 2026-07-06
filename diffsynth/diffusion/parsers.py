@@ -20,7 +20,8 @@ def add_video_size_config(parser: argparse.ArgumentParser):
     parser.add_argument("--width", type=int, default=None, help="Width of images. Leave `height` and `width` empty to enable dynamic resolution.")
     parser.add_argument("--max_pixels", type=int, default=1024*1024, help="Maximum number of pixels per frame, used for dynamic resolution.")
     parser.add_argument("--num_frames", type=int, default=81, help="Number of frames per video. Frames are sampled from the video prefix.")
-    parser.add_argument("--enable_orientation_buckets", default=False, action="store_true", help="Group samples by landscape/portrait metadata and resize each sample to its orientation bucket without center crop.")
+    parser.add_argument("--enable_resolution_buckets", default=False, action="store_true", help="Resize each sample to per-row metadata height/width and group by resolution bucket.")
+    parser.add_argument("--enable_orientation_buckets", default=False, action="store_true", help="Deprecated alias for --enable_resolution_buckets.")
     return parser
 
 def add_model_config(parser: argparse.ArgumentParser):

@@ -305,6 +305,94 @@ class ToAbsolutePath(DataProcessingOperator):
         return os.path.join(self.base_path, data)
 
 
+def _metadata_value_is_missing(value):
+    return value is None or value == "" or (isinstance(value, float) and math.isnan(value))
+
+
+class MetadataResolutionMediaOperator(DataProcessingOperator):
+    requires_metadata = True
+
+    image_extensions = ("jpg", "jpeg", "png", "webp", "bmp")
+    gif_extensions = ("gif",)
+    video_extensions = ("mp4", "avi", "mov", "wmv", "mkv", "flv", "webm")
+
+    def __init__(
+        self,
+        base_path="",
+        height_division_factor=16,
+        width_division_factor=16,
+        num_frames=81,
+        time_division_factor=4,
+        time_division_remainder=1,
+        frame_rate=24,
+        fix_frame_rate=False,
+    ):
+        self.base_path = base_path
+        self.height_division_factor = height_division_factor
+        self.width_division_factor = width_division_factor
+        self.num_frames = num_frames
+        self.time_division_factor = time_division_factor
+        self.time_division_remainder = time_division_remainder
+        self.frame_rate = frame_rate
+        self.fix_frame_rate = fix_frame_rate
+
+    def get_height_width(self, row):
+        height = row.get("height")
+        width = row.get("width")
+        if _metadata_value_is_missing(height) or _metadata_value_is_missing(width):
+            raise ValueError("metadata-driven resize requires `height` and `width` columns.")
+        height = int(float(height))
+        width = int(float(width))
+        if height <= 0 or height % self.height_division_factor != 0:
+            raise ValueError(f"metadata height must be a positive multiple of {self.height_division_factor}: {height}")
+        if width <= 0 or width % self.width_division_factor != 0:
+            raise ValueError(f"metadata width must be a positive multiple of {self.width_division_factor}: {width}")
+        return height, width
+
+    def absolute_path(self, data):
+        if _is_url(data):
+            return data
+        return os.path.join(self.base_path, data)
+
+    def resize_image(self, image, height, width):
+        return torchvision.transforms.functional.resize(
+            image,
+            (height, width),
+            interpolation=torchvision.transforms.InterpolationMode.BILINEAR,
+        )
+
+    def process_one(self, data, height, width):
+        path = self.absolute_path(data)
+        file_ext_name = path.split(".")[-1].lower()
+        frame_processor = lambda image: self.resize_image(image, height, width)
+        if file_ext_name in self.image_extensions:
+            return [frame_processor(LoadImage()(path))]
+        if file_ext_name in self.gif_extensions:
+            return LoadGIF(
+                self.num_frames,
+                self.time_division_factor,
+                self.time_division_remainder,
+                frame_processor=frame_processor,
+            )(path)
+        if file_ext_name in self.video_extensions:
+            return LoadVideo(
+                self.num_frames,
+                self.time_division_factor,
+                self.time_division_remainder,
+                frame_processor=frame_processor,
+                frame_rate=self.frame_rate,
+                fix_frame_rate=self.fix_frame_rate,
+            )(path)
+        raise ValueError(f"Unsupported file: {data}")
+
+    def __call__(self, row, key):
+        height, width = self.get_height_width(row)
+        data = row[key]
+        if isinstance(data, list):
+            return [self.resize_image(LoadImage()(self.absolute_path(item)), height, width) for item in data]
+        return self.process_one(data, height, width)
+
+
 class LoadAudio(DataProcessingOperator):
     def __init__(self, sr=16000):
         self.sr = sr

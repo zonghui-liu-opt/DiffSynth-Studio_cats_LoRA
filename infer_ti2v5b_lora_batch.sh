@@ -10,8 +10,6 @@ OUTPUT_DIR=${OUTPUT_DIR:-./results/lora_sft/Wan2.2-TI2V-5B_cats_LoRA_batch_pred}
 CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
 PYTHON_BIN=${PYTHON_BIN:-python3}
 
-HEIGHT=${HEIGHT:-480}
-WIDTH=${WIDTH:-832}
 NUM_FRAMES=${NUM_FRAMES:-97}
 SEED=${SEED:-1}
 FPS=${FPS:-24}
@@ -55,8 +53,6 @@ export DATA_ROOT
 export METADATA_PATH
 export LORA_PATH
 export OUTPUT_DIR
-export HEIGHT
-export WIDTH
 export NUM_FRAMES
 export SEED
 export FPS
@@ -75,11 +71,18 @@ data_root = Path(os.environ["DATA_ROOT"])
 metadata_path = Path(os.environ["METADATA_PATH"])
 
 with metadata_path.open(newline="", encoding="utf-8") as handle:
-    reader = csv.DictReader(handle)
+    sample = handle.read(4096)
+    handle.seek(0)
+    try:
+        delimiter = csv.Sniffer().sniff(sample, delimiters=",\t").delimiter
+    except csv.Error:
+        first_line = sample.splitlines()[0] if sample else ""
+        delimiter = "\t" if "\t" in first_line else ","
+    reader = csv.DictReader(handle, delimiter=delimiter)
     rows = list(reader)
     fieldnames = reader.fieldnames or []
 
-required = ("input_image", "prompt", "height", "width", "bucket")
+required = ("input_image", "prompt", "height", "width")
 missing = [name for name in required if name not in fieldnames]
 if missing:
     raise SystemExit(f"metadata missing required columns: {', '.join(missing)}")
@@ -92,16 +95,13 @@ for row_id, row in enumerate(rows):
     if not image_path.is_file():
         raise SystemExit(f"missing input_image at row {row_id}: {image_path}")
     with Image.open(image_path) as image:
-        width, height = image.size
-    expected_bucket = "landscape" if (height, width) == (480, 832) else "portrait" if (height, width) == (832, 480) else None
-    if expected_bucket is None:
-        raise SystemExit(f"unexpected input_image size at row {row_id}: HxW={height}x{width}, path={image_path}")
-    if int(row["height"]) != height or int(row["width"]) != width:
-        raise SystemExit(
-            f"metadata size mismatch at row {row_id}: "
-            f"metadata HxW={row['height']}x{row['width']}, image HxW={height}x{width}"
-        )
-    if row["bucket"] != expected_bucket:
+        image.verify()
+    height = int(float(row["height"]))
+    width = int(float(row["width"]))
+    if height <= 0 or width <= 0 or height % 32 != 0 or width % 32 != 0:
+        raise SystemExit(f"invalid metadata resolution at row {row_id}: HxW={height}x{width}")
+    expected_bucket = f"{height}x{width}"
+    if row.get("bucket") and row["bucket"] != expected_bucket:
         raise SystemExit(
             f"metadata bucket mismatch at row {row_id}: "
             f"metadata bucket={row['bucket']}, expected={expected_bucket}"

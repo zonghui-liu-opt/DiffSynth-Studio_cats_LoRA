@@ -137,6 +137,7 @@ if __name__ == "__main__":
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         kwargs_handlers=[accelerate.DistributedDataParallelKwargs(find_unused_parameters=args.find_unused_parameters)],
     )
+    enable_resolution_buckets = args.enable_resolution_buckets or args.enable_orientation_buckets
     dataset = UnifiedDataset(
         base_path=args.dataset_base_path,
         metadata_path=args.dataset_metadata_path,
@@ -152,7 +153,7 @@ if __name__ == "__main__":
             num_frames=args.num_frames,
             time_division_factor=4 if not args.framewise_decoding else 1,
             time_division_remainder=1 if not args.framewise_decoding else 0,
-            resize_mode="bucket" if args.enable_orientation_buckets else "crop",
+            resize_mode="metadata" if enable_resolution_buckets else "crop",
         ),
         special_operator_map={
             "animate_face_video": ToAbsolutePath(args.dataset_base_path) >> LoadVideo(args.num_frames, 4, 1, frame_processor=ImageCropAndResize(512, 512, None, 16, 16)),

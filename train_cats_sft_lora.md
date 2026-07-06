@@ -21,8 +21,6 @@ export DATA_ROOT=/path/to/dataset
 python3 check_dataset.py \
   --dataset_root "$DATA_ROOT" \
   --metadata_path "$DATA_ROOT/metadata.csv" \
-  --height 480 \
-  --width 832 \
   --num_frames 121
 ```
 
@@ -33,7 +31,7 @@ python3 check_dataset.py \
 - 输出包含 `resolution_counts` 和 `bucket_counts`
 - `$DATA_ROOT/metadata_fixed.csv` 包含 `height,width,bucket`
 
-后续命令里的 `HEIGHT/WIDTH` 始终表示横屏 bucket：`480x832`。竖屏样本由 bucket 机制自动使用 `832x480`，不再 center crop 成横屏。
+`bucket` 使用 `HxW` 命名，例如 `480x832`、`832x480`、`480x480`。后续训练不再指定全局 `HEIGHT/WIDTH`，直接按 metadata 每行的 `height,width` resize。
 
 ## 3. 冒烟训练
 
@@ -63,8 +61,8 @@ DATA_ROOT=$DATA_ROOT \
 METADATA_PATH=$DATA_ROOT/metadata_smoke16.csv \
 OUTPUT_ROOT=./models/train/cats_Wan2.2-TI2V-5B_lora_smoke \
 NUM_GPUS=2 \
-HEIGHT=480 WIDTH=832 NUM_FRAMES=121 \
-ENABLE_ORIENTATION_BUCKETS=1 \
+NUM_FRAMES=121 \
+ENABLE_RESOLUTION_BUCKETS=1 \
 SAVE_STEPS= \
 NUM_EPOCHS=1 DATASET_REPEAT=3 DATASET_NUM_WORKERS=4 \
 bash train_ti2v5b_lora.sh
@@ -92,14 +90,14 @@ DATA_ROOT=$DATA_ROOT \
 METADATA_PATH=$DATA_ROOT/metadata_fixed.csv \
 OUTPUT_ROOT=./models/train/cats_Wan2.2-TI2V-5B_lora \
 NUM_GPUS=4 \
-HEIGHT=480 WIDTH=832 NUM_FRAMES=121 \
-ENABLE_ORIENTATION_BUCKETS=1 \
+NUM_FRAMES=121 \
+ENABLE_RESOLUTION_BUCKETS=1 \
 SAVE_STEPS= \
 NUM_EPOCHS=5 DATASET_REPEAT=1 DATASET_NUM_WORKERS=8 \
 bash train_ti2v5b_lora.sh
 ```
 
-只改变量，不改代码。需要临时退回旧的横屏裁剪行为时，追加 `ENABLE_ORIENTATION_BUCKETS=0`。
+只改变量，不改代码。需要临时退回上游 center-crop 行为时，追加 `ENABLE_RESOLUTION_BUCKETS=0`。旧变量 `ENABLE_ORIENTATION_BUCKETS` 仍作为兼容别名可用。
 
 默认 `SAVE_STEPS=` 为空，训练每个 epoch 保存一次 `epoch-*.safetensors`。如果要按 step 保存，例如每 500 step 存一次：
 
@@ -129,4 +127,4 @@ python3 plot_metrics.py \
 - GPU 利用率周期性掉底：增大 `DATASET_NUM_WORKERS`。
 - DDP 报 unused parameters：在 `train_ti2v5b_lora.sh` 的训练参数中临时追加 `--find_unused_parameters`。
 - `metadata.csv` 读取异常：训练一律改用 `metadata_fixed.csv`。
-- 横竖屏混合：确认 `check_dataset.py` 输出 `bucket_counts`，训练脚本默认 `ENABLE_ORIENTATION_BUCKETS=1`。
+- 多分辨率混合：确认 `check_dataset.py` 输出 `bucket_counts`，训练脚本默认 `ENABLE_RESOLUTION_BUCKETS=1`，新增分辨率只需要在 metadata 中写入对应 `height,width`。

@@ -7,13 +7,11 @@ from PIL import Image
 
 from diffsynth.utils.data import save_video
 from infer_cats_ti2v5b_lora import (
-    HEIGHT,
     LORA_PATH,
     MODEL_ROOT,
     NUM_FRAMES,
     OUTPUT_PATH,
     SEED,
-    WIDTH,
     build_model_configs,
     require_path,
 )
@@ -56,7 +54,7 @@ def input_image_path(data_root, row):
 def row_size(row):
     if row.get("height") and row.get("width"):
         return int(row["height"]), int(row["width"])
-    return HEIGHT, WIDTH
+    raise ValueError("metadata row is missing required height/width")
 
 
 def output_video_path(output_dir, row_id, row):

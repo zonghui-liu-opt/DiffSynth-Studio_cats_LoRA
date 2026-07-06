@@ -1,6 +1,7 @@
 import argparse
 import csv
 import json
+import math
 import subprocess
 from collections import Counter
 from pathlib import Path
@@ -34,14 +35,41 @@ def read_metadata(metadata_path, delimiter):
     return rows
 
 
-def orientation_bucket(height, width):
-    return "landscape" if width >= height else "portrait"
+def is_missing(value):
+    return value is None or value == "" or (isinstance(value, float) and math.isnan(value))
 
 
-def bucket_resolution(bucket, landscape_height, landscape_width):
-    if bucket == "portrait":
-        return landscape_width, landscape_height
-    return landscape_height, landscape_width
+def parse_resolution_value(value, name, row_id):
+    if is_missing(value):
+        raise ValueError(f"missing_{name}")
+    try:
+        parsed = int(float(value))
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"invalid_{name}:{value}") from exc
+    if parsed <= 0 or parsed % 32 != 0:
+        raise ValueError(f"{name}_not_positive_multiple_of_32:{parsed}")
+    return parsed
+
+
+def resolution_bucket(height, width):
+    return f"{height}x{width}"
+
+
+def resolve_target_resolution(row, video_stats, fallback_height, fallback_width, row_id):
+    has_metadata_resolution = not is_missing(row.get("height")) and not is_missing(row.get("width"))
+    if has_metadata_resolution:
+        height = parse_resolution_value(row.get("height"), "height", row_id)
+        width = parse_resolution_value(row.get("width"), "width", row_id)
+        return height, width
+    if video_stats is not None:
+        height = parse_resolution_value(video_stats["height"], "height", row_id)
+        width = parse_resolution_value(video_stats["width"], "width", row_id)
+        return height, width
+    if fallback_height is not None and fallback_width is not None:
+        height = parse_resolution_value(fallback_height, "height", row_id)
+        width = parse_resolution_value(fallback_width, "width", row_id)
+        return height, width
+    raise ValueError("missing_resolution")
 
 
 def write_fixed_metadata(metadata_path, rows):
@@ -125,7 +153,9 @@ def inspect_video(video_path):
     raise RuntimeError("; ".join(errors))
 
 
-def validate_dataset(dataset_root, metadata_path, height, width, num_frames):
+def validate_dataset(dataset_root, metadata_path, height=None, width=None, num_frames=None):
+    if num_frames is None:
+        raise ValueError("num_frames is required")
     dataset_root = Path(dataset_root)
     metadata_path = Path(metadata_path)
     delimiter = detect_delimiter(metadata_path)
@@ -133,6 +163,7 @@ def validate_dataset(dataset_root, metadata_path, height, width, num_frames):
 
     bad_rows = []
     stats = []
+    target_stats = []
     fixed_rows = []
     for row_id, row in enumerate(rows):
         reasons = []
@@ -152,20 +183,34 @@ def validate_dataset(dataset_root, metadata_path, height, width, num_frames):
                 reasons.append(f"video_read_error:{exc}")
         if not image_path.exists():
             reasons.append("missing_input_image")
-        if video_stats is not None:
-            bucket = orientation_bucket(video_stats["height"], video_stats["width"])
-            target_height, target_width = bucket_resolution(bucket, height, width)
+        try:
+            target_height, target_width = resolve_target_resolution(row, video_stats, height, width, row_id)
+            bucket = resolution_bucket(target_height, target_width)
             fixed_row.update({"height": target_height, "width": target_width, "bucket": bucket})
+            target_stats.append({"row": row_id, "height": target_height, "width": target_width, "bucket": bucket})
+        except ValueError as exc:
+            reasons.append(f"resolution_error:{exc}")
         fixed_rows.append(fixed_row)
         if reasons:
             bad_rows.append({"row": row_id, "video": row["video"], "reasons": reasons})
 
     fixed_path = write_fixed_metadata(metadata_path, fixed_rows)
-    resolution_counts = Counter((item["height"], item["width"]) for item in stats)
+    resolution_counts = Counter((item["height"], item["width"]) for item in target_stats)
+    source_resolution_counts = Counter((item["height"], item["width"]) for item in stats)
     frame_counts = Counter(item["frames"] for item in stats)
     fps_counts = Counter(round(item["fps"], 3) for item in stats)
-    bucket_counts = Counter(orientation_bucket(item["height"], item["width"]) for item in stats)
-    token_count = tokens_per_sample(num_frames=num_frames, height=height, width=width)
+    bucket_counts = Counter(item["bucket"] for item in target_stats)
+    bad_row_ids = {row["row"] for row in bad_rows}
+    tokens_per_bucket = {}
+    tokens_total = 0
+    for item in target_stats:
+        if item["row"] in bad_row_ids:
+            continue
+        token_count = tokens_per_sample(num_frames=num_frames, height=item["height"], width=item["width"])
+        tokens_per_bucket[item["bucket"]] = token_count
+        tokens_total += token_count
+    unique_token_counts = sorted(set(tokens_per_bucket.values()))
+    token_count = unique_token_counts[0] if len(unique_token_counts) == 1 else None
     return {
         "delimiter": "tab" if delimiter == "\t" else "comma",
         "fixed_path": str(fixed_path),
@@ -174,13 +219,15 @@ def validate_dataset(dataset_root, metadata_path, height, width, num_frames):
         "bad_samples": len(bad_rows),
         "bad_rows": bad_rows,
         "resolution_counts": dict(resolution_counts),
+        "source_resolution_counts": dict(source_resolution_counts),
         "bucket_counts": dict(bucket_counts),
         "frame_counts": dict(frame_counts),
         "fps_counts": dict(fps_counts),
-        "recommended_height": height,
-        "recommended_width": width,
+        "recommended_height": None,
+        "recommended_width": None,
         "tokens_per_video": token_count,
-        "tokens_total": token_count * max(0, len(rows) - len(bad_rows)),
+        "tokens_per_bucket": tokens_per_bucket,
+        "tokens_total": tokens_total,
     }
 
 
@@ -194,12 +241,14 @@ def print_summary(summary):
     for reason, count in sorted(reason_counts.items()):
         print(f"{reason}: {count}")
     print(f"resolution_counts: {summary['resolution_counts']}")
+    print(f"source_resolution_counts: {summary['source_resolution_counts']}")
     print(f"bucket_counts: {summary['bucket_counts']}")
     print(f"frame_counts: {summary['frame_counts']}")
     print(f"fps_counts: {summary['fps_counts']}")
-    print(f"recommended_height: {summary['recommended_height']}")
-    print(f"recommended_width: {summary['recommended_width']}")
-    print(f"tokens_per_video: {summary['tokens_per_video']}")
+    print("recommended_height: metadata")
+    print("recommended_width: metadata")
+    print(f"tokens_per_video: {summary['tokens_per_video'] if summary['tokens_per_video'] is not None else 'mixed'}")
+    print(f"tokens_per_bucket: {summary['tokens_per_bucket']}")
     print(f"tokens_total: {summary['tokens_total']}")
 
 
@@ -207,8 +256,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Check Wan TI2V dataset metadata and media files.")
     parser.add_argument("--dataset_root", type=Path, required=True)
     parser.add_argument("--metadata_path", type=Path, required=True)
-    parser.add_argument("--height", type=int, required=True)
-    parser.add_argument("--width", type=int, required=True)
+    parser.add_argument("--height", type=int, default=None, help="Deprecated fallback height. Prefer per-row metadata height.")
+    parser.add_argument("--width", type=int, default=None, help="Deprecated fallback width. Prefer per-row metadata width.")
     parser.add_argument("--num_frames", type=int, required=True)
     return parser.parse_args()
 

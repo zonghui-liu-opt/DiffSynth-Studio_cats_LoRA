@@ -21,12 +21,10 @@ DATA_ROOT=/path/to/dataset
 python3 check_dataset.py \
   --dataset_root "$DATA_ROOT" \
   --metadata_path "$DATA_ROOT/metadata.csv" \
-  --height 480 \
-  --width 832 \
   --num_frames 121 | tee "$DATA_ROOT/check_dataset.log"
 ```
 
-看输出里的 `resolution_counts`、`bucket_counts`、帧数分布和 `tokens_per_video`。训练时使用 `metadata_fixed.csv`；该文件会额外包含 `height,width,bucket`，横屏样本为 `480,832,landscape`，竖屏样本为 `832,480,portrait`。
+看输出里的 `resolution_counts`、`bucket_counts`、帧数分布和 `tokens_per_bucket`。训练时使用 `metadata_fixed.csv`；该文件会额外包含或规范化 `height,width,bucket`，bucket 名固定为 `HxW`，例如 `480x832`、`832x480`、`480x480`。新增训练分辨率时，只需要让 metadata 每行写对 `height,width`；如果原始 metadata 没有这两列，`check_dataset.py` 会用视频实测尺寸补齐。
 
 ## 冒烟训练
 
@@ -54,8 +52,8 @@ DATA_ROOT=/path/to/dataset \
 METADATA_PATH=/path/to/dataset/metadata_smoke16.csv \
 OUTPUT_ROOT=./models/train/Wan2.2-TI2V-5B_lora_smoke \
 NUM_GPUS=2 \
-HEIGHT=480 WIDTH=832 NUM_FRAMES=121 \
-ENABLE_ORIENTATION_BUCKETS=1 \
+NUM_FRAMES=121 \
+ENABLE_RESOLUTION_BUCKETS=1 \
 SAVE_STEPS= \
 NUM_EPOCHS=1 DATASET_REPEAT=3 DATASET_NUM_WORKERS=4 \
 bash train_ti2v5b_lora.sh
@@ -78,14 +76,14 @@ DATA_ROOT=/path/to/dataset \
 METADATA_PATH=/path/to/dataset/metadata_fixed.csv \
 OUTPUT_ROOT=./models/train/Wan2.2-TI2V-5B_lora \
 NUM_GPUS=4 \
-HEIGHT=480 WIDTH=832 NUM_FRAMES=121 \
-ENABLE_ORIENTATION_BUCKETS=1 \
+NUM_FRAMES=121 \
+ENABLE_RESOLUTION_BUCKETS=1 \
 SAVE_STEPS= \
 NUM_EPOCHS=5 DATASET_REPEAT=1 DATASET_NUM_WORKERS=8 \
 bash train_ti2v5b_lora.sh
 ```
 
-`HEIGHT/WIDTH` 表示横屏 bucket 的目标尺寸。开启 `ENABLE_ORIENTATION_BUCKETS=1` 后，竖屏样本会按 `832x480` bucket 处理，不再被 center crop 成横屏。`train_ti2v5b_lora.sh` 会导出 `PYTHONPATH=$PWD`，请从仓库根目录执行。
+开启 `ENABLE_RESOLUTION_BUCKETS=1` 后，训练会直接读取 metadata 每行的 `height,width`，按 `bucket=HxW` 分组采样，并把 `video` 与 `input_image` resize 到该行目标尺寸，不再需要在启动脚本里指定全局 `HEIGHT/WIDTH`。旧变量 `ENABLE_ORIENTATION_BUCKETS` 仍作为兼容别名可用；需要退回上游 center-crop 行为时设置 `ENABLE_RESOLUTION_BUCKETS=0`。`train_ti2v5b_lora.sh` 会导出 `PYTHONPATH=$PWD`，请从仓库根目录执行。
 
 ## Checkpoint 保存频率
 
@@ -122,7 +120,7 @@ python3 plot_metrics.py \
 - 当前训练脚本显式传 `--data_file_keys "video,input_image"`。
 - trainer 会优先使用 metadata 中的 `input_image`；没有该列时回退为视频首帧。
 - 当前 DataLoader 每个 micro step 实际只取 1 条样本；bucket sampler 控制采样顺序和尺寸路径，不代表 dense tensor batch size > 1。
-- 指标里的 `samples_per_step = grad_accum * world_size`；横屏 `480x832` 和竖屏 `832x480` token 数相同。
+- 指标里的 `samples_per_step = grad_accum * world_size`；`tokens_per_sample` 会按当前样本实际 resize 后的 `height,width,num_frames` 计算，混合 `480x832/832x480/480x480` 时不会再固定用全局尺寸。
 - 调 `DATASET_NUM_WORKERS` 时看 GPU 利用率：周期性掉底通常是解码瓶颈。
 - 600 条数据规模较小，可先跑完冒烟再决定是否启用缓存数据流程。
 
@@ -154,13 +152,14 @@ pipe = WanVideoPipeline.from_pretrained(
 )
 
 pipe.load_lora(pipe.dit, "models/train/Wan2.2-TI2V-5B_lora/epoch-0.safetensors", alpha=1)
-input_image = Image.open("/path/to/dataset/images_480x832/example.jpg").convert("RGB").resize((832, 480))
+height, width = 480, 480
+input_image = Image.open("/path/to/dataset/images_480x480/example.jpg").convert("RGB").resize((width, height))
 
 video = pipe(
     prompt="一只猫在镜头前自然活动",
     input_image=input_image,
-    height=480,
-    width=832,
+    height=height,
+    width=width,
     num_frames=121,
     seed=1,
     tiled=True,
@@ -168,4 +167,4 @@ video = pipe(
 save_video(video, "validate_wan22_ti2v5b_lora.mp4", fps=15, quality=5)
 ```
 
-验证竖屏 LoRA 时，把 `input_image` 换成竖屏条件图，并把 `height=832, width=480`。
+批量推理建议直接用 `infer_ti2v5b_lora_batch.sh`，它会从 metadata 每行读取 `height,width`；单样本推理可设置 `METADATA_PATH=/path/to/metadata_fixed.csv ROW_ID=0 DATA_ROOT=/path/to/dataset python3 infer_cats_ti2v5b_lora.py`。

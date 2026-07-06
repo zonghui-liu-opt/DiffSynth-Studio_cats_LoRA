@@ -49,6 +49,17 @@ class UnifiedDataset(torch.utils.data.Dataset):
             frame_processor = ImageCropAndResize(height, width, max_pixels, height_division_factor, width_division_factor)
         elif resize_mode == "bucket":
             frame_processor = ImageResizeToBucketResolution(height, width)
+        elif resize_mode == "metadata":
+            return MetadataResolutionMediaOperator(
+                base_path=base_path,
+                height_division_factor=height_division_factor,
+                width_division_factor=width_division_factor,
+                num_frames=num_frames,
+                time_division_factor=time_division_factor,
+                time_division_remainder=time_division_remainder,
+                frame_rate=frame_rate,
+                fix_frame_rate=fix_frame_rate,
+            )
         else:
             raise ValueError(f"Unsupported resize_mode: {resize_mode}")
         return RouteByType(operator_map=[
@@ -102,9 +113,9 @@ class UnifiedDataset(torch.utils.data.Dataset):
             for key in self.data_file_keys:
                 if key in data:
                     if key in self.special_operator_map:
-                        data[key] = self.special_operator_map[key](data[key])
-                    elif key in self.data_file_keys:
-                        data[key] = self.main_data_operator(data[key])
+                        data[key] = self.apply_operator(self.special_operator_map[key], data, key)
+                    else:
+                        data[key] = self.apply_operator(self.main_data_operator, data, key)
         return data
 
     def __len__(self):
@@ -114,6 +125,11 @@ class UnifiedDataset(torch.utils.data.Dataset):
             return len(self.cached_data) * self.repeat
         else:
             return len(self.data) * self.repeat
+
+    def apply_operator(self, operator, data, key):
+        if getattr(operator, "requires_metadata", False):
+            return operator(data, key)
+        return operator(data[key])
         
     def check_data_equal(self, data1, data2):
         # Debug only

@@ -4,7 +4,7 @@ from accelerate import Accelerator
 from .training_module import DiffusionTrainingModule
 from .logger import ModelLogger
 from diffsynth.core import OffloadTrainingManager
-from diffsynth.core.data.bucket_sampler import OrientationBucketSampler
+from diffsynth.core.data.bucket_sampler import ResolutionBucketSampler
 from metrics_utils import MetricsWriter, tokens_per_sample
 
 
@@ -34,8 +34,8 @@ def save_training_args(args):
 
 def build_dataloader(dataset, shuffle, num_workers, args=None):
     sampler = None
-    if getattr(args, "enable_orientation_buckets", False):
-        sampler = OrientationBucketSampler(dataset, shuffle=shuffle)
+    if getattr(args, "enable_resolution_buckets", False) or getattr(args, "enable_orientation_buckets", False):
+        sampler = ResolutionBucketSampler(dataset, shuffle=shuffle)
         shuffle = False
     dataloader = torch.utils.data.DataLoader(
         dataset,
@@ -45,6 +45,20 @@ def build_dataloader(dataset, shuffle, num_workers, args=None):
         num_workers=num_workers,
     )
     return dataloader, sampler
+
+
+def training_sample_tokens(data, args):
+    if isinstance(data, dict):
+        video = data.get("video")
+        if isinstance(video, list) and len(video) > 0:
+            width, height = video[0].size
+            return tokens_per_sample(len(video), height, width)
+    height = getattr(args, "height", None)
+    width = getattr(args, "width", None)
+    num_frames = getattr(args, "num_frames", None)
+    if height is None or width is None or num_frames is None:
+        raise ValueError("Cannot compute metrics tokens without video data or explicit height/width/num_frames.")
+    return tokens_per_sample(num_frames, height, width)
 
 
 def launch_training_task(
@@ -123,7 +137,7 @@ def launch_training_task(
                         "epoch": epoch_id,
                         "loss": loss_value,
                         "step_time_sec": now - step_start_time,
-                        "tokens_per_sample": tokens_per_sample(args.num_frames, args.height, args.width),
+                        "tokens_per_sample": training_sample_tokens(data, args),
                         "samples_per_step": 1 * accelerator.gradient_accumulation_steps * accelerator.num_processes,
                         "lr": optimizer.param_groups[0]["lr"],
                     })

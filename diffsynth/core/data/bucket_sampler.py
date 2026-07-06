@@ -4,7 +4,15 @@ from collections import OrderedDict
 import torch
 
 
-class OrientationBucketSampler(torch.utils.data.Sampler):
+def _metadata_value_is_missing(value):
+    return value is None or value == "" or (isinstance(value, float) and value != value)
+
+
+def resolution_bucket(height, width):
+    return f"{int(float(height))}x{int(float(width))}"
+
+
+class ResolutionBucketSampler(torch.utils.data.Sampler):
     def __init__(self, dataset, bucket_column="bucket", shuffle=True, seed=0):
         self.dataset = dataset
         self.bucket_column = bucket_column
@@ -19,8 +27,8 @@ class OrientationBucketSampler(torch.utils.data.Sampler):
             return str(bucket)
         height = row.get("height")
         width = row.get("width")
-        if height not in (None, "") and width not in (None, ""):
-            return "landscape" if int(width) >= int(height) else "portrait"
+        if not _metadata_value_is_missing(height) and not _metadata_value_is_missing(width):
+            return resolution_bucket(height, width)
         raise ValueError(f"Dataset row {row_id} is missing `{self.bucket_column}` metadata.")
 
     def _build_buckets(self):
@@ -57,3 +65,6 @@ class OrientationBucketSampler(torch.utils.data.Sampler):
 
     def __len__(self):
         return sum(len(indices) for indices in self.bucket_to_indices.values())
+
+
+OrientationBucketSampler = ResolutionBucketSampler

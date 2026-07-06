@@ -1,4 +1,6 @@
+import csv
 import glob
+import os
 from pathlib import Path
 
 import torch
@@ -17,6 +19,9 @@ HEIGHT = 480
 WIDTH = 832
 NUM_FRAMES = 97
 SEED = 1
+METADATA_PATH = os.environ.get("METADATA_PATH")
+DATA_ROOT = Path(os.environ.get("DATA_ROOT", Path(METADATA_PATH).parent if METADATA_PATH else INPUT_IMAGE.parent.parent))
+ROW_ID = int(os.environ.get("ROW_ID", "0"))
 
 PROMPT = (
     "视频的首帧是一只银渐层的英国短毛猫，体态圆润微胖，毛发柔顺，全程摄像机静止，纯白背景，全景构图，猫咪居中。"
@@ -33,6 +38,34 @@ def require_path(path, label, is_dir=False):
     if not exists:
         raise FileNotFoundError(f"Missing {label}: {path}")
     return path
+
+
+def detect_delimiter(metadata_path):
+    sample = Path(metadata_path).read_text(encoding="utf-8")[:4096]
+    try:
+        return csv.Sniffer().sniff(sample, delimiters=",\t").delimiter
+    except csv.Error:
+        first_line = sample.splitlines()[0] if sample else ""
+        return "\t" if "\t" in first_line else ","
+
+
+def load_case_from_metadata(metadata_path=METADATA_PATH, row_id=ROW_ID):
+    if metadata_path is None:
+        return PROMPT, INPUT_IMAGE, HEIGHT, WIDTH
+    metadata_path = require_path(metadata_path, "metadata file")
+    with metadata_path.open(newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle, delimiter=detect_delimiter(metadata_path))
+        rows = list(reader)
+    if row_id < 0 or row_id >= len(rows):
+        raise IndexError(f"ROW_ID={row_id} is out of range for {metadata_path} with {len(rows)} rows")
+    row = rows[row_id]
+    missing = [name for name in ("prompt", "input_image", "height", "width") if not row.get(name)]
+    if missing:
+        raise ValueError(f"metadata row {row_id} missing required columns: {', '.join(missing)}")
+    input_image = Path(row["input_image"])
+    if not input_image.is_absolute():
+        input_image = DATA_ROOT / input_image
+    return row["prompt"], input_image, int(float(row["height"])), int(float(row["width"]))
 
 
 def build_model_configs(model_root=MODEL_ROOT):
@@ -62,7 +95,8 @@ def video_output_path(path=OUTPUT_PATH):
 
 def main():
     require_path(LORA_PATH, "LoRA checkpoint")
-    require_path(INPUT_IMAGE, "input image")
+    prompt, input_image_path, height, width = load_case_from_metadata()
+    require_path(input_image_path, "input image")
     model_configs, tokenizer_config = build_model_configs()
 
     from diffsynth.pipelines.wan_video import WanVideoPipeline
@@ -75,12 +109,12 @@ def main():
     )
     pipe.load_lora(pipe.dit, str(LORA_PATH), alpha=1)
 
-    input_image = Image.open(INPUT_IMAGE).convert("RGB").resize((WIDTH, HEIGHT))
+    input_image = Image.open(input_image_path).convert("RGB").resize((width, height))
     video = pipe(
-        prompt=PROMPT,
+        prompt=prompt,
         input_image=input_image,
-        height=HEIGHT,
-        width=WIDTH,
+        height=height,
+        width=width,
         num_frames=NUM_FRAMES,
         seed=SEED,
         tiled=True,
