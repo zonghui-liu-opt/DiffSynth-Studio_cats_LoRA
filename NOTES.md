@@ -224,3 +224,30 @@ python3 compare_ti2v5b_batch_outputs.py \
 脚本默认生成左右并排的标注视频：左侧标注 `RUNTIME LORA`，表示推理时加载 LoRA；右侧标注 `MERGED MODEL`，表示直接加载 merged 权重。视频画面中不显示逐帧差异，差异统计只写入终端与 JSON report。未指定 `--comparison-dir` 时输出到 merged 目录同级的 `comparison_videos/`；只需要 JSON 指标时可传 `--skip-comparison-videos`。
 
 理想结果是 `all_file_bytes_equal=true`；即使 MP4 容器字节因为编码器元数据不同，也应至少满足 `all_decoded_frames_equal=true`。如果 strict deterministic 模式遇到当前 CUDA/attention 后端不支持的算子，脚本会直接失败而不是静默产出不可严格对比的结果；可用 `DETERMINISTIC=warn` 诊断，但该模式不再承诺逐像素一致。
+
+## 内网 batch 推理入口
+
+`infer_batch.py` 是两种权重加载方式共用的推理核心；两个 shell 只负责选择模型根目录、模式与输出目录，从而保证 metadata、图像 resize、seed、采样和视频保存代码完全一致。
+
+推理时加载 LoRA：
+
+```bash
+BASE_MODEL_ROOT=/path/to/Wan2.2-TI2V-5B \
+LORA_PATH=/path/to/epoch-52.safetensors \
+DATA_ROOT=/path/to/testsets \
+METADATA_PATH=/path/to/metadata_6cases_480x832.csv \
+LORA_ALPHA=1.0 \
+bash infer_batch_lora.sh
+```
+
+直接加载 merged 模型：
+
+```bash
+MERGED_MODEL_ROOT=/path/to/Wan2.2-TI2V-5B-merged \
+DATA_ROOT=/path/to/testsets \
+METADATA_PATH=/path/to/metadata_6cases_480x832.csv \
+EXPECTED_LORA_ALPHA=1.0 \
+bash infer_batch_merged.sh
+```
+
+merged 目录必须包含 merged DiT，以及 T5、VAE、tokenizer 的文件或有效软链接。若存在 `merge_manifest.json`，merged 入口会检查其中的 `lora_alpha` 是否与 `EXPECTED_LORA_ALPHA` 一致。两种入口都会在各自输出目录写入 `inference_manifest.json`，便于核对比较参数。
