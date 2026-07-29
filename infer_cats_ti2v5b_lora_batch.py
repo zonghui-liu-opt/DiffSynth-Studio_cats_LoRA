@@ -7,21 +7,23 @@ from PIL import Image
 
 from diffsynth.utils.data import save_video
 from infer_cats_ti2v5b_lora import (
-    LORA_PATH,
-    MODEL_ROOT,
-    NUM_FRAMES,
-    OUTPUT_PATH,
-    SEED,
     build_model_configs,
     require_path,
 )
 
 
+MODEL_ROOT = Path(os.environ.get("MODEL_ROOT", "/path/to/local/Wan2.2-TI2V-5B"))
 DATA_ROOT = Path(os.environ.get("DATA_ROOT", "/srv/workspace/Kirin_AI_Workspace/TMG_I/l00832862/datasets_project/cats"))
 METADATA_PATH = Path(os.environ.get("METADATA_PATH", DATA_ROOT / "metadata.csv"))
-OUTPUT_DIR = Path(os.environ.get("OUTPUT_DIR", OUTPUT_PATH))
+OUTPUT_DIR = Path(os.environ.get("OUTPUT_DIR", "./results/ti2v5b_batch_pred"))
+INFERENCE_MODE = os.environ.get("INFERENCE_MODE", "lora").strip().lower()
+LORA_PATH = os.environ.get("LORA_PATH", "").strip()
+LORA_ALPHA = float(os.environ.get("LORA_ALPHA", "1"))
+NUM_FRAMES = int(os.environ.get("NUM_FRAMES", "97"))
+SEED = int(os.environ.get("SEED", "1"))
 FPS = int(os.environ.get("FPS", 24))
 VIDEO_QUALITY = int(os.environ.get("VIDEO_QUALITY", 5))
+DETERMINISTIC = os.environ.get("DETERMINISTIC", "strict").strip().lower()
 
 
 def detect_delimiter(metadata_path):
@@ -61,8 +63,27 @@ def output_video_path(output_dir, row_id, row):
     return Path(output_dir) / f"{row_id:04d}_{Path(row['input_image']).stem}.mp4"
 
 
+def configure_determinism(mode=DETERMINISTIC):
+    if mode not in {"0", "off", "warn", "strict"}:
+        raise ValueError("DETERMINISTIC must be one of: 0, off, warn, strict")
+    if mode in {"0", "off"}:
+        return
+
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.use_deterministic_algorithms(True, warn_only=mode == "warn")
+
+
 def main():
-    require_path(LORA_PATH, "LoRA checkpoint")
+    if INFERENCE_MODE not in {"lora", "merged"}:
+        raise ValueError("INFERENCE_MODE must be either 'lora' or 'merged'")
+    if INFERENCE_MODE == "lora":
+        if not LORA_PATH:
+            raise ValueError("LORA_PATH is required when INFERENCE_MODE=lora")
+        require_path(LORA_PATH, "LoRA checkpoint")
+
+    configure_determinism()
     rows = read_metadata(METADATA_PATH)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -75,7 +96,14 @@ def main():
         model_configs=model_configs,
         tokenizer_config=tokenizer_config,
     )
-    pipe.load_lora(pipe.dit, str(LORA_PATH), alpha=1)
+    if INFERENCE_MODE == "lora":
+        pipe.load_lora(pipe.dit, LORA_PATH, alpha=LORA_ALPHA)
+
+    print(
+        f"inference mode={INFERENCE_MODE}, model_root={MODEL_ROOT}, "
+        f"lora_alpha={LORA_ALPHA if INFERENCE_MODE == 'lora' else 'n/a'}, "
+        f"deterministic={DETERMINISTIC}"
+    )
 
     for row_id, row in enumerate(rows):
         height, width = row_size(row)
@@ -83,7 +111,8 @@ def main():
         save_path = output_video_path(OUTPUT_DIR, row_id, row)
         print(f"[{row_id + 1}/{len(rows)}] {image_path} -> {save_path}")
 
-        input_image = Image.open(image_path).convert("RGB").resize((width, height))
+        with Image.open(image_path) as image:
+            input_image = image.convert("RGB").resize((width, height))
         video = pipe(
             prompt=row["prompt"],
             input_image=input_image,

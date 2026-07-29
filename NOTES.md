@@ -168,3 +168,54 @@ save_video(video, "validate_wan22_ti2v5b_lora.mp4", fps=15, quality=5)
 ```
 
 批量推理建议直接用 `infer_ti2v5b_lora_batch.sh`，它会从 metadata 每行读取 `height,width`；单样本推理可设置 `METADATA_PATH=/path/to/metadata_fixed.csv ROW_ID=0 DATA_ROOT=/path/to/dataset python3 infer_cats_ti2v5b_lora.py`。
+
+## LoRA 离线 Merge 与等价性对比
+
+离线 merge 必须和运行时加载 LoRA 使用相同的 `LORA_ALPHA`（当前默认都是 `1`），并在将要做对比的 H100 软件/硬件环境中执行。merge 脚本会只加载 DiT，以 bf16 调用与运行时推理相同的 `pipe.load_lora` 融合路径，然后保存为可被 DiffSynth 自动识别的 safetensors 分片。
+
+```bash
+MODEL_ROOT=/path/to/local/Wan2.2-TI2V-5B \
+LORA_PATH=/path/to/epoch-26.safetensors \
+MERGED_MODEL_ROOT=/path/to/models/Wan2.2-TI2V-5B-cats-lora-merged \
+LORA_ALPHA=1 \
+CUDA_VISIBLE_DEVICES=0 \
+bash merge_ti2v5b_lora.sh
+```
+
+默认 `AUX_FILES_MODE=symlink`，因此输出目录中的 T5、VAE 和 tokenizer 指向 baseline，节省磁盘且可以直接推理；需要把 merged 目录整体搬走时设置 `AUX_FILES_MODE=copy`。脚本拒绝覆盖已有 `MERGED_MODEL_ROOT`。成功后查看：
+
+- `merge_manifest.json`：baseline/LoRA 路径、LoRA SHA256、alpha、融合层数、软件版本与 merged state checksum。
+- `diffusion_pytorch_model-*.safetensors`：融合后的 bf16 DiT。
+- 保存验证会逐 tensor 检查内存与磁盘完全一致，并释放原模型后通过 DiffSynth 再加载一次 merged DiT；仅在明确接受跳过时设置 `VERIFY_SAVE=0` 或 `VERIFY_RELOAD=0`。
+
+使用完全相同的 metadata、seed、帧数、FPS 和 deterministic 设置分别推理：
+
+```bash
+COMMON_DATA_ROOT=/path/to/testsets
+COMMON_METADATA=/path/to/testsets/metadata_6cases_480x832.csv
+
+MODEL_ROOT=/path/to/local/Wan2.2-TI2V-5B \
+LORA_PATH=/path/to/epoch-26.safetensors \
+LORA_ALPHA=1 \
+DATA_ROOT="$COMMON_DATA_ROOT" METADATA_PATH="$COMMON_METADATA" \
+OUTPUT_DIR=./results/compare/lora \
+NUM_FRAMES=97 SEED=1 DETERMINISTIC=strict \
+bash infer_ti2v5b_lora_batch.sh
+
+MERGED_MODEL_ROOT=/path/to/models/Wan2.2-TI2V-5B-cats-lora-merged \
+DATA_ROOT="$COMMON_DATA_ROOT" METADATA_PATH="$COMMON_METADATA" \
+OUTPUT_DIR=./results/compare/merged \
+NUM_FRAMES=97 SEED=1 DETERMINISTIC=strict \
+bash infer_ti2v5b_merged_batch.sh
+```
+
+两条推理命令最终共用 `infer_cats_ti2v5b_lora_batch.py`，唯一模型差异是前者启动时执行 LoRA fusion、后者读取已融合 DiT。比较 MP4 文件字节与解码后每个像素：
+
+```bash
+python3 compare_ti2v5b_batch_outputs.py \
+  --lora-dir ./results/compare/lora \
+  --merged-dir ./results/compare/merged \
+  --report ./results/compare/report.json
+```
+
+理想结果是 `all_file_bytes_equal=true`；即使 MP4 容器字节因为编码器元数据不同，也应至少满足 `all_decoded_frames_equal=true`。如果 strict deterministic 模式遇到当前 CUDA/attention 后端不支持的算子，脚本会直接失败而不是静默产出不可严格对比的结果；可用 `DETERMINISTIC=warn` 诊断，但该模式不再承诺逐像素一致。

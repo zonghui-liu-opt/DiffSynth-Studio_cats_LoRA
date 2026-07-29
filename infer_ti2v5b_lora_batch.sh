@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+
 # ====== Edit this block on the H100 machine ======
 MODEL_ROOT=${MODEL_ROOT:-/path/to/local/Wan2.2-TI2V-5B}
 DATA_ROOT=${DATA_ROOT:-/path/to/testsets}
 METADATA_PATH=${METADATA_PATH:-$DATA_ROOT/metadata_6cases_480x832.csv}
 LORA_PATH=${LORA_PATH:-/path/to/epoch-26.safetensors}
 OUTPUT_DIR=${OUTPUT_DIR:-./results/lora_sft/Wan2.2-TI2V-5B_cats_LoRA_batch_pred}
+INFERENCE_MODE=${INFERENCE_MODE:-lora}
+LORA_ALPHA=${LORA_ALPHA:-1}
 CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
 PYTHON_BIN=${PYTHON_BIN:-python3}
 
@@ -14,7 +18,13 @@ NUM_FRAMES=${NUM_FRAMES:-97}
 SEED=${SEED:-1}
 FPS=${FPS:-24}
 VIDEO_QUALITY=${VIDEO_QUALITY:-5}
+DETERMINISTIC=${DETERMINISTIC:-strict}
 # ==================================================
+
+if [ "$INFERENCE_MODE" != "lora" ] && [ "$INFERENCE_MODE" != "merged" ]; then
+  echo "INFERENCE_MODE must be 'lora' or 'merged', got: ${INFERENCE_MODE}" >&2
+  exit 1
+fi
 
 DIT_PATHS=("${MODEL_ROOT}"/diffusion_pytorch_model*.safetensors)
 if [ ! -e "${DIT_PATHS[0]}" ]; then
@@ -33,7 +43,7 @@ if [ ! -d "${MODEL_ROOT}/google/umt5-xxl" ]; then
   echo "Missing tokenizer directory: ${MODEL_ROOT}/google/umt5-xxl" >&2
   exit 1
 fi
-if [ ! -f "$LORA_PATH" ]; then
+if [ "$INFERENCE_MODE" = "lora" ] && [ ! -f "$LORA_PATH" ]; then
   echo "Missing LoRA checkpoint: ${LORA_PATH}" >&2
   exit 1
 fi
@@ -53,12 +63,16 @@ export DATA_ROOT
 export METADATA_PATH
 export LORA_PATH
 export OUTPUT_DIR
+export INFERENCE_MODE
 export NUM_FRAMES
 export SEED
 export FPS
 export VIDEO_QUALITY
+export LORA_ALPHA
+export DETERMINISTIC
 export CUDA_VISIBLE_DEVICES
-export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
+export CUBLAS_WORKSPACE_CONFIG=${CUBLAS_WORKSPACE_CONFIG:-:4096:8}
+export PYTHONPATH="${SCRIPT_DIR}:${PYTHONPATH:-}"
 
 "$PYTHON_BIN" - <<'PY'
 import csv
@@ -110,12 +124,14 @@ for row_id, row in enumerate(rows):
 print(f"metadata ok: rows={len(rows)}, path={metadata_path}")
 PY
 
-echo "Starting Wan2.2-TI2V-5B LoRA batch inference"
+echo "Starting Wan2.2-TI2V-5B ${INFERENCE_MODE} batch inference"
 echo "MODEL_ROOT=${MODEL_ROOT}"
 echo "DATA_ROOT=${DATA_ROOT}"
 echo "METADATA_PATH=${METADATA_PATH}"
-echo "LORA_PATH=${LORA_PATH}"
+if [ "$INFERENCE_MODE" = "lora" ]; then
+  echo "LORA_PATH=${LORA_PATH}, LORA_ALPHA=${LORA_ALPHA}"
+fi
 echo "OUTPUT_DIR=${OUTPUT_DIR}"
-echo "NUM_FRAMES=${NUM_FRAMES}, FPS=${FPS}, SEED=${SEED}, CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES}"
+echo "NUM_FRAMES=${NUM_FRAMES}, FPS=${FPS}, SEED=${SEED}, DETERMINISTIC=${DETERMINISTIC}, CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES}"
 
-"$PYTHON_BIN" infer_cats_ti2v5b_lora_batch.py
+"$PYTHON_BIN" "${SCRIPT_DIR}/infer_cats_ti2v5b_lora_batch.py"
