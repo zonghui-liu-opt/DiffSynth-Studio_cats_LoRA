@@ -215,7 +215,12 @@ bash infer_ti2v5b_merged_batch.sh
 python3 compare_ti2v5b_batch_outputs.py \
   --lora-dir ./results/compare/lora \
   --merged-dir ./results/compare/merged \
+  --comparison-dir ./results/compare/comparison_videos \
+  --lora-flag "RUNTIME LORA" \
+  --merged-flag "MERGED MODEL" \
   --report ./results/compare/report.json
 ```
+
+脚本默认生成左右并排的标注视频：左侧标注 `RUNTIME LORA`，表示推理时加载 LoRA；右侧标注 `MERGED MODEL`，表示直接加载 merged 权重。视频画面中不显示逐帧差异，差异统计只写入终端与 JSON report。未指定 `--comparison-dir` 时输出到 merged 目录同级的 `comparison_videos/`；只需要 JSON 指标时可传 `--skip-comparison-videos`。
 
 理想结果是 `all_file_bytes_equal=true`；即使 MP4 容器字节因为编码器元数据不同，也应至少满足 `all_decoded_frames_equal=true`。如果 strict deterministic 模式遇到当前 CUDA/attention 后端不支持的算子，脚本会直接失败而不是静默产出不可严格对比的结果；可用 `DETERMINISTIC=warn` 诊断，但该模式不再承诺逐像素一致。
