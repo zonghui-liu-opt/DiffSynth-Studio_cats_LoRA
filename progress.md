@@ -1,5 +1,18 @@
 # 进度日志
 
+## 会话：2026-09-03
+- 已完成 rank64 LoRA 批量 TI2V 的 DiT / VAE decoding 计时。
+- 已确认现有入口与计时边界；并行子代理审查 pipeline，主代理实现批量调度和输出报告。
+- 当前代码修改前工作区干净；读取并保留已有训练任务记录。
+- 实现：新增 `inference_timing.py`，修改 `infer_batch.py` 与两个 launcher，新增中文说明 `infer_ti2v5b_timing.md`。
+- 功能：同步分段计时、逐条 CSV、按分辨率汇总 JSON、按分辨率预热、重复测量、rank64 检查、步数/CFG 配置、失败时保留已完成记录、模型加载/LoRA 融合单独记录。
+- 验证：`python3 -m pytest -q tests/` → 35 passed（2 条已有 SWIG deprecation warnings）；py_compile、bash -n、git diff --check 通过。
+- 数据验证：本地 `testsets/metadata_6cases_480x832.csv` 的 6 条记录及图片通过预检，含 480x832 / 832x480 两种分辨率。
+- 独立审查：真实 WanVideoPipeline + toy nn.Module 的 CPU smoke，3 步 CFG=5/unmerged 为 6 次 DiT，CFG=5/merged 和 CFG=1/unmerged 为 3 次，均单次 batch1 decode；计时包装恢复正确。
+- 修复审查发现：提前拒绝 CFG_SCALE=1/CFG_MERGE=1，避免上游无 guidance 仍合并双 batch 导致测量失真。
+- 限制：本机 torch 2.5.0 无 CUDA，真实权重推理与性能数值需由 GPU 环境执行。
+- 发布：用户指定直接上传 `zonghui-liu-opt/DiffSynth-Studio_cats_LoRA` 的 `main`；远端 main 为当前分支的祖先，采用包含既有 LoRA 合并/对比/批量入口提交的快进更新，不改写历史。
+
 ## 会话：2026-07-02
 
 ### 文档整理

@@ -4,7 +4,15 @@
 在当前 DiffSynth-Studio 仓库中完成 Stage A 可离线验证的 Wan2.2-TI2V-5B LoRA 训练辅助工具、指标记录、绘图、数据集 smoke test 与 Stage B 上机 checklist。
 
 ## 当前阶段
-完成
+阶段 8：rank64 LoRA 批量 TI2V 推理分段计时（complete）
+
+### 阶段 8：批量推理与性能报告（2026-09-03）
+- [x] 检查现有 rank64 launcher、推理路径和 CUDA 环境
+- [x] 增加 DiT / VAE decode 同步计时及逐条 CSV、汇总 JSON
+- [x] 支持预热、重复测量、推理步数与 CFG 参数，记录完整运行配置
+- [x] 添加中文使用说明，完成 CPU 回归与模拟流水线验证
+- **状态：** complete
+- 验证：35 项测试通过，6 条真实 metadata/图片预检通过；真实 Wan pipeline 配合 toy 模型验证计时边界和 CFG 调用次数。当前 Mac 无 CUDA，未跑真实权重 GPU 推理。
 
 ## 各阶段
 

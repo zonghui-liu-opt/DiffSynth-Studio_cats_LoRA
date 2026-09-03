@@ -9,6 +9,8 @@ EXPERIMENT_ROOT=${EXPERIMENT_ROOT:-/srv/workspace/Kirin_AI_Workspace/TMG_I/l0083
 LORA_PATH=${LORA_PATH:-$EXPERIMENT_ROOT/epoch-52.safetensors}
 COMPARE_ROOT=${COMPARE_ROOT:-$EXPERIMENT_ROOT/pred_videos/epoch52_alpha1.0_compare}
 OUTPUT_DIR=${OUTPUT_DIR:-$COMPARE_ROOT/runtime_lora}
+# This experiment uses rank64. Set EXPECTED_LORA_RANK='' to accept another rank.
+EXPECTED_LORA_RANK=${EXPECTED_LORA_RANK-64}
 # ==================================================
 
 MODEL_ROOT=$BASE_MODEL_ROOT
@@ -18,5 +20,6 @@ export MODEL_ROOT
 export LORA_PATH
 export OUTPUT_DIR
 export INFERENCE_MODE
+export EXPECTED_LORA_RANK
 
 exec bash "${SCRIPT_DIR}/infer_batch.sh"

@@ -1,5 +1,15 @@
 # 发现与决策
 
+## 2026-09-03：TI2V 批量计时
+- 当前 rank64 入口为 `infer_batch_lora.sh` → `infer_batch.sh` → `infer_batch.py`，已有本地模型分片加载、LoRA/merged 模式、CSV/TSV 与逐条视频输出。
+- WanVideoPipeline 的 DiT 由 `pipe.model_fn` 直接调用模块，不能依赖 `dit.forward` hook；需要累计正/负 CFG 调用。
+- `vae.decode` 位于预处理和去噪后，可单独计时，避免把首帧 VAE encode 计入 decode。
+- 批量沿用逐条 TI2V（每次一条 prompt + image）；GPU 同步后的墙钟耗时用于 DiT、VAE decode 和完整 pipeline，MP4 保存单独计时。
+- 计划保留现有视频命名，重复测量时增加重复编号；预热按分辨率执行且不纳入报告。
+- 源码确认默认非 VRAM-managed 模型会在 load_lora 时融合权重；入口显式设 hotload=False，manifest 记录 fused_at_load，模型加载/LoRA 融合计时独立于样本。
+- 真实 WanVideoPipeline + toy nn.Module 的 CPU smoke 发现 CFG_SCALE=1 / CFG_MERGE=1 会形成 batch2 latent；入口提前拒绝此组合。
+- CUDA 计时参考 PyTorch 官方异步执行说明：https://docs.pytorch.org/docs/main/notes/cuda.html#asynchronous-execution 。来源仅用于确认同步语义。
+
 ## 需求
 - Stage A 在 MacBook CPU-only 环境完成离线可验证开发，不加载真实权重、不跑真实训练。
 - Stage B 在无外网 H100 环境只改脚本顶部变量块即可跑正式 LoRA SFT。
