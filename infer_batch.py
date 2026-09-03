@@ -7,20 +7,20 @@ import time
 from contextlib import nullcontext
 from pathlib import Path
 
+# Enforce local-only loading for both the shell and direct Python entry points.
+# These must be set before transformers/huggingface_hub are imported.
+os.environ["DIFFSYNTH_SKIP_DOWNLOAD"] = "True"
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
+
 import torch
 from PIL import Image
 from safetensors import safe_open
 
 from inference_timing import WanInferenceTimer
-
-try:
-    from diffsynth.core import ModelConfig
-except ImportError:
-    from diffsynth.pipelines.wan_video import ModelConfig
-
-from diffsynth.pipelines.wan_video import WanVideoPipeline
-from diffsynth.utils.data import save_video
-
+from inference_model_checks import inspect_dit_checkpoint, validate_loaded_pipeline, validate_lora_layout
+from inference_runtime_checks import check_runtime
 
 MODEL_ROOT = Path(os.environ.get(
     "MODEL_ROOT",
@@ -99,7 +99,9 @@ def require_path(path, name, is_dir=None):
     return path
 
 
-def build_model_configs(model_root):
+def build_model_configs(model_root, dit_paths=None):
+    from diffsynth.core import ModelConfig
+
     model_root = Path(model_root)
 
     t5_path = require_path(
@@ -118,11 +120,8 @@ def build_model_configs(model_root):
         is_dir=True,
     )
 
-    dit_paths = sorted(model_root.glob("diffusion_pytorch_model*.safetensors"))
-    if not dit_paths:
-        raise FileNotFoundError(
-            f"No DiT safetensors found at {model_root}/diffusion_pytorch_model*.safetensors"
-        )
+    if dit_paths is None:
+        dit_paths, _, _ = inspect_dit_checkpoint(model_root)
 
     print("========== MODEL FILES ==========")
     print(f"[T5]  {t5_path}")
@@ -134,17 +133,17 @@ def build_model_configs(model_root):
     print("=================================")
 
     model_configs = [
-        ModelConfig(path=str(t5_path)),
+        ModelConfig(path=str(t5_path), skip_download=True),
 
         # 关键修正：
         # 多个 DiT shard 必须作为同一个 ModelConfig 的 path list 传入。
         # 不能把每个 shard 单独写成一个 ModelConfig。
-        ModelConfig(path=[str(path) for path in dit_paths]),
+        ModelConfig(path=[str(path) for path in dit_paths], skip_download=True),
 
-        ModelConfig(path=str(vae_path)),
+        ModelConfig(path=str(vae_path), skip_download=True),
     ]
 
-    tokenizer_config = ModelConfig(path=str(tokenizer_path))
+    tokenizer_config = ModelConfig(path=str(tokenizer_path), skip_download=True)
 
     return model_configs, tokenizer_config
 
@@ -230,6 +229,8 @@ def validate_settings():
         raise ValueError("NUM_INFERENCE_STEPS/REPEATS must be positive; WARMUP_RUNS must be >= 0")
     if FPS <= 0:
         raise ValueError("FPS must be positive")
+    if not 0 <= VIDEO_QUALITY <= 10:
+        raise ValueError("VIDEO_QUALITY must be between 0 and 10")
     if not math.isfinite(CFG_SCALE) or CFG_SCALE < 0:
         raise ValueError("CFG_SCALE must be finite and >= 0")
     if CFG_SCALE == 1.0 and CFG_MERGE:
@@ -321,7 +322,8 @@ def print_merged_model_info(model_root):
     return manifest
 
 
-def write_inference_manifest(rows, merged_manifest=None, lora_ranks=None, model_load_seconds=None):
+def write_inference_manifest(rows, merged_manifest=None, lora_ranks=None, model_load_seconds=None,
+                             lora_targets=(), model_structure_hash=None, runtime_report=None):
     manifest = {
         "inference_mode": INFERENCE_MODE,
         "model_root": str(MODEL_ROOT),
@@ -349,6 +351,9 @@ def write_inference_manifest(rows, merged_manifest=None, lora_ranks=None, model_
         "expected_lora_alpha": EXPECTED_LORA_ALPHA,
         "expected_lora_rank": EXPECTED_LORA_RANK,
         "detected_lora_ranks": lora_ranks,
+        "matched_lora_layers": len(lora_targets),
+        "model_structure_hash": model_structure_hash,
+        "runtime_preflight": runtime_report,
         "lora_execution": "fused_at_load" if INFERENCE_MODE == "lora" else "merged_checkpoint",
         "batch_size": 1,
         "num_inference_steps": NUM_INFERENCE_STEPS,
@@ -408,6 +413,13 @@ def write_timing_summary(records, planned_samples, warmed_resolutions, status, e
     temporary_path = path.with_suffix(".json.tmp")
     temporary_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     temporary_path.replace(path)
+
+
+def save_video(frames, save_path, fps, quality):
+    # Defer the full DiffSynth import until after the runtime API checks.
+    from diffsynth.utils.data import save_video as write_video
+
+    return write_video(frames, save_path, fps=fps, quality=quality)
 
 
 def run_batch(pipe, rows):
@@ -507,9 +519,6 @@ def main():
     validate_settings()
     if INFERENCE_MODE not in {"lora", "merged"}:
         raise ValueError("INFERENCE_MODE must be either 'lora' or 'merged'")
-    if not torch.cuda.is_available():
-        raise RuntimeError("CUDA is required for Wan2.2-TI2V-5B inference")
-
     require_path(MODEL_ROOT, "model root", is_dir=True)
     require_path(DATA_ROOT, "data root", is_dir=True)
     require_path(METADATA_PATH, "metadata file", is_dir=False)
@@ -523,9 +532,19 @@ def main():
     validate_rows(rows)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    model_configs, tokenizer_config = build_model_configs(MODEL_ROOT)
+    print("[Preflight] Checking CUDA, tokenizer and video encoder...", flush=True)
+    runtime_report = check_runtime(MODEL_ROOT / "google/umt5-xxl", OUTPUT_DIR, FPS, VIDEO_QUALITY)
+    print("[Preflight] Checking model shards and LoRA tensor headers...", flush=True)
+    dit_paths, dit_shapes, model_structure_hash = inspect_dit_checkpoint(MODEL_ROOT)
+    model_configs, tokenizer_config = build_model_configs(MODEL_ROOT, dit_paths=dit_paths)
     merged_manifest = print_merged_model_info(MODEL_ROOT) if INFERENCE_MODE == "merged" else None
     lora_ranks = print_lora_rank(LORA_PATH) if INFERENCE_MODE == "lora" else None
+    lora_targets = validate_lora_layout(LORA_PATH, dit_shapes) if INFERENCE_MODE == "lora" else []
+    if INFERENCE_MODE == "lora":
+        print(f"[Preflight] LoRA targets matched: {len(lora_targets)}", flush=True)
+    preflight_path = OUTPUT_DIR / "preflight_report.json"
+    preflight_path.write_text(json.dumps(runtime_report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"[Preflight] Passed; report: {preflight_path}. Starting model load.", flush=True)
 
     print(f"Starting Wan2.2-TI2V-5B {INFERENCE_MODE} batch inference")
     print(f"MODEL_ROOT={MODEL_ROOT}")
@@ -543,20 +562,28 @@ def main():
 
     torch.cuda.synchronize()
     model_load_start = time.perf_counter()
+    from diffsynth.pipelines.wan_video import WanVideoPipeline
+
     pipe = WanVideoPipeline.from_pretrained(
         torch_dtype=torch.bfloat16,
         device="cuda",
         model_configs=model_configs,
         tokenizer_config=tokenizer_config,
+        redirect_common_files=False,
     )
 
+    validate_loaded_pipeline(pipe, lora_targets)
     if INFERENCE_MODE == "lora":
         pipe.load_lora(pipe.dit, str(LORA_PATH), alpha=LORA_ALPHA, hotload=False)
     torch.cuda.synchronize()
     model_load_seconds = time.perf_counter() - model_load_start
     print(f"[Model load + LoRA fusion] {model_load_seconds:.3f}s (excluded from sample timings)")
 
-    write_inference_manifest(rows, merged_manifest=merged_manifest, lora_ranks=lora_ranks, model_load_seconds=model_load_seconds)
+    write_inference_manifest(
+        rows, merged_manifest=merged_manifest, lora_ranks=lora_ranks,
+        model_load_seconds=model_load_seconds, lora_targets=lora_targets,
+        model_structure_hash=model_structure_hash, runtime_report=runtime_report,
+    )
     run_batch(pipe, rows)
 
     print(f"Done. Saved videos to: {OUTPUT_DIR}")

@@ -4,7 +4,15 @@
 
 ## 运行
 
-在已安装本仓库依赖的 CUDA 环境执行：
+沿用仓库原有内网模型目录、rank64 `epoch-52.safetensors` 和 Wan Python 环境时，更新整份仓库后，在仓库目录运行这一条即可：
+
+```bash
+bash infer_batch_lora.sh
+```
+
+脚本会自动预检，通过后直接开始正式批量推理，不要求先执行另一条测试命令。默认仍是 97 帧、50 步、CFG=5、分块 VAE、每条生成一次。默认 `WARMUP_RUNS=0`；需要去掉冷启动影响时用 `WARMUP_RUNS=1 bash infer_batch_lora.sh`。
+
+模型目录和原内网 Python 路径沿用已有配置；`testsets`、`results` 默认按脚本所在仓库定位，移动仓库或从其他工作目录启动都可用。脚本优先使用原内网 Wan Python，原路径不存在时使用当前 `python3`，并打印最终解释器。目录不同可在 **`infer_batch_lora.sh` 顶部**修改，或一次性传入环境变量：
 
 ```bash
 BASE_MODEL_ROOT=/path/to/Wan2.2-TI2V-5B \
@@ -12,7 +20,7 @@ LORA_PATH=/path/to/rank64/epoch-52.safetensors \
 DATA_ROOT="$PWD/testsets" \
 METADATA_PATH="$PWD/testsets/metadata_6cases_480x832.csv" \
 OUTPUT_DIR="$PWD/results/ti2v5b_rank64_timing" \
-PYTHON_BIN=python3 \
+PYTHON_BIN=/path/to/wan_environment/bin/python \
 CUDA_VISIBLE_DEVICES=0 \
 NUM_FRAMES=97 \
 NUM_INFERENCE_STEPS=50 \
@@ -21,9 +29,19 @@ REPEATS=1 \
 bash infer_batch_lora.sh
 ```
 
-也可以修改两个 shell 脚本顶部的路径后运行 `bash infer_batch_lora.sh`。直接执行 Python 时用 `MODEL_ROOT` 指定基础模型目录；LoRA launcher 使用 `BASE_MODEL_ROOT`。
+直接执行 Python 时用 `MODEL_ROOT` 指定基础模型目录；LoRA launcher 支持 `BASE_MODEL_ROOT` 和 `MODEL_ROOT`，同时设置时以前者为准。不要为了运行此脚本切换到未安装 Wan 依赖的系统 Python。
 
 基础模型目录需包含 `diffusion_pytorch_model*.safetensors`、`models_t5_umt5-xxl-enc-bf16.pth`、`Wan2.2_VAE.pth` 和 `google/umt5-xxl/`。LoRA launcher 默认检查所有识别出的 LoRA A/B（或 down/up）矩阵的 rank 必须为 64。其他 rank 可通过 `EXPECTED_LORA_RANK=16` 指定，或设为空字符串仅记录检测结果。
+
+预检在加载大模型前执行：
+
+- 检查当前 PyTorch 的模型加载 API、CUDA/BF16，实际运行小型 BF16 矩阵乘法及当前 Wan attention 后端。
+- 强制离线，从本地加载 tokenizer 并执行中英文分词。脚本不安装包，也不下载模型或 tokenizer。
+- 在实际输出目录临时编码两帧 MP4 并读回，确认 FFmpeg 和写权限；检查文件会自动清理。
+- 按 safetensors index 精确选择 DiT 分片；没有 index 时检查分片编号完整性，拒绝重复 tensor、缺片和非 TI2V-5B 结构。
+- 使用实际 LoRA 加载器的命名规则核对每一对 A/B、矩阵形状及 DiT 目标层，拒绝缺配对、错误模型或零匹配，避免静默运行基础模型。
+
+所有 Python 标准输出和错误自动保存到输出目录的 `inference.log`，错误退出码会正常向上传递。预检通过报告写入 `preflight_report.json`，包含实际软件、CUDA、设备、attention 后端和编码检查结果。
 
 metadata 示例：
 
@@ -64,6 +82,7 @@ images/cat_portrait.png,一只猫抬起前爪并自然眨眼,832,480
 - `timing.csv`：每条正式测量一行，记录样本编号、重复编号、尺寸、seed、步数、CFG 和耗时。CSV 编号从 0 开始，文件重复后缀从 1 开始。
 - `timing_summary.json`：总体与 `by_resolution` 分组统计，包含数量及 total / mean / min / max / median / p95，时间单位均为秒。P95 使用线性插值。
 - `inference_manifest.json`：模型和 LoRA 路径、检测 rank、加载方式、GPU、PyTorch/CUDA 版本、生成参数、预热及重复设置、模型加载耗时。
+- `preflight_report.json` / `inference.log`：启动预检通过结果与完整 Python 运行日志；manifest 还会记录 LoRA 实际匹配层数。
 
 | CSV 字段 | 计时范围 |
 | --- | --- |
@@ -86,11 +105,11 @@ images/cat_portrait.png,一只猫抬起前爪并自然眨眼,832,480
 
 ## 验证
 
-本地无需模型的 CPU 测试覆盖同步边界、CFG 计数、异常恢复、按尺寸预热、重复输出、报告统计和 rank 检查：
+本地无需预训练权重的测试覆盖同步边界、CFG 计数、异常恢复、按尺寸预热、重复输出、报告统计、分片完整性及 LoRA 匹配，另外使用真实 Wan pipeline、调度器、TI2V units 和本地初始化的小型 DiT 验证计时前后同 seed 输出一致。shell 测试覆盖带空格路径、从其他目录启动、离线变量和错误码/日志传递：
 
 ```bash
-python3 -m pytest -q tests/test_inference_timing.py tests/test_infer_batch_timing.py
+python3 -m pytest -q tests/
 bash -n infer_batch.sh infer_batch_lora.sh infer_batch_merged.sh
 ```
 
-真实耗时与视频结果需在 CUDA 机器上使用实际 Wan2.2-TI2V-5B 和 LoRA 权重运行上述命令获得。
+本轮 71 项测试通过，并实际完成 CPU 上的 MP4 编解码和合成本地 tokenizer 分词冒烟；本机没有 CUDA，未使用目标 Wan/LoRA 权重完成 GPU 全量验收。启动小算子预检可检查当前 GPU 后端是否工作，不能替代完整 5B 模型的显存和推理验证；真实耗时由内网机器执行获得。

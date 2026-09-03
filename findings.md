@@ -1,6 +1,11 @@
 # 发现与决策
 
 ## 2026-09-03：TI2V 批量计时
+- 内网专项复核：原 path-only ModelConfig 本来不会下载；新增强制 offline 环境变量与 tokenizer 的 local_files_only 预检，确保缺本地资源时提前失败。
+- 实质风险：LoRA loader 对零匹配只打印且继续；现已用其 get_name_dict 规则在 safetensors header 上核对所有目标、A/B配对和shape，再在已加载模型上复核模块存在。
+- 实质风险：原 FFmpeg/tokenizer 首次调用发生在长推理后/大模型装载后；现提前真实分词、小视频编解码、CUDA bf16/attention检查。
+- 模型结构识别复用当前仓库hash算法和注册的TI2V5B配置；index读取精确文件集，无index检查分片总数，拒绝重复key和不匹配的有效Wan变体。
+- 当前模型loader使用 load_state_dict(assign=True)，不能仅依赖 pyproject.toml 的 torch>=2.0 声明；preflight 检查实际API能力，不自动更改内网环境。
 - 当前 rank64 入口为 `infer_batch_lora.sh` → `infer_batch.sh` → `infer_batch.py`，已有本地模型分片加载、LoRA/merged 模式、CSV/TSV 与逐条视频输出。
 - WanVideoPipeline 的 DiT 由 `pipe.model_fn` 直接调用模块，不能依赖 `dit.forward` hook；需要累计正/负 CFG 调用。
 - `vae.decode` 位于预处理和去噪后，可单独计时，避免把首帧 VAE encode 计入 decode。

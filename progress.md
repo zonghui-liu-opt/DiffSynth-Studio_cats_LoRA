@@ -1,6 +1,11 @@
 # 进度日志
 
 ## 会话：2026-09-03
+- 内网可靠性复核完成：新增模型header检查与运行时预检，持久化真实pipeline回归；将可复现的启动失败提前检查，保留模型数值与推理参数。
+- 新增 `inference_model_checks.py` / `inference_runtime_checks.py`；修复 LoRA 零匹配静默推理、缺片晚发现、tokenizer/FFmpeg首次调用晚发现、MODEL_ROOT覆盖未生效与异目录启动问题。
+- 启动统一执行预检后进入全量推理，自动保存 `inference.log` 和 `preflight_report.json`；不安装依赖，不下载模型，不更改精度或CFG默认值。
+- 新验收：`python3 -m pytest -q tests/` → 71 passed, 2已有SWIG warnings；bash -n、py_compile、git diff --check通过。真实MP4 2帧32x32编码1597字节并读回，真实本地合成SentencePiece/T5分词通过。
+- 真实Wan pipeline回归使用原 __call__、model_fn、FlowMatchScheduler和TI2V units，小DiT本地随机初始化；有效CFG三个组合计时前后同seed输出完全一致，异常恢复通过。
 - 已完成 rank64 LoRA 批量 TI2V 的 DiT / VAE decoding 计时。
 - 已确认现有入口与计时边界；并行子代理审查 pipeline，主代理实现批量调度和输出报告。
 - 当前代码修改前工作区干净；读取并保留已有训练任务记录。

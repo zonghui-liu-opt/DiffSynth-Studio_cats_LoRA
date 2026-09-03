@@ -4,7 +4,15 @@
 在当前 DiffSynth-Studio 仓库中完成 Stage A 可离线验证的 Wan2.2-TI2V-5B LoRA 训练辅助工具、指标记录、绘图、数据集 smoke test 与 Stage B 上机 checklist。
 
 ## 当前阶段
-阶段 8：rank64 LoRA 批量 TI2V 推理分段计时（complete）
+阶段 9：内网首次运行可靠性验证（complete）
+
+### 阶段 9：内网启动加固（2026-09-03）
+- [x] 审查离线加载、LoRA匹配、模型分片、CUDA与视频保存风险
+- [x] 将可验证的环境/资源/编码检查放到模型加载前
+- [x] 持久化真实 Wan pipeline 无权重回归并执行编码冒烟
+- [x] 完成文档与待发布 main 的版本，明确实际 GPU 验证边界
+- **状态：** complete
+- 验证：71项tests通过，真实CPU MP4/tokenizer冒烟通过；目标GPU/5B权重未实测。
 
 ### 阶段 8：批量推理与性能报告（2026-09-03）
 - [x] 检查现有 rank64 launcher、推理路径和 CUDA 环境
