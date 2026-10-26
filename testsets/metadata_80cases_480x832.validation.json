@@ -1,0 +1,94 @@
+{
+  "passed": true,
+  "csv": "testsets/metadata_80cases_480x832.csv",
+  "row_count": 80,
+  "image_count": 8,
+  "action_count": 10,
+  "rows_per_image": 10,
+  "rows_per_action": 8,
+  "columns": [
+    "input_image",
+    "prompt",
+    "height",
+    "width",
+    "bucket"
+  ],
+  "dimensions": {
+    "width": 480,
+    "height": 832,
+    "bucket": "portrait"
+  },
+  "all_images_decoded_and_paths_resolved": true,
+  "image_bytes_unchanged_after_name_normalization": true,
+  "all_source_actions_covered": true,
+  "one_shared_G_per_cat": true,
+  "one_shared_A_N_pair_per_action": true,
+  "all_csv_prompts_exactly_match_catalog_G_A_N": true,
+  "all_bilingual_examples_match_components": true,
+  "tokenizer": "data_train/caption_batch_v1/tokenizer/spiece.model",
+  "tokenizer_sha256": "e3909a67b780650b35cf529ac782ad2b6b26e6d1f849d3fbb6a872905f452458",
+  "token_limits": {
+    "G": 96,
+    "A": 8,
+    "N": 144,
+    "total_including_EOS": 256
+  },
+  "G_tokens": {
+    "test_01_orange_tabby_480x832.png": 68,
+    "test_02_blue_white_british_480x832.png": 79,
+    "test_03_bicolor_ragdoll_480x832.png": 70,
+    "test_04_calico_480x832.png": 82,
+    "test_05_tuxedo_480x832.png": 79,
+    "test_06_longhair_orange_white_480x832.png": 86,
+    "test_07_seal_point_siamese_480x832.png": 66,
+    "test_08_brown_mackerel_tabby_480x832.png": 76
+  },
+  "action_tokens": {
+    "curl_up_and_lie_down": {
+      "A": 6,
+      "N": 120
+    },
+    "curl_up_and_lie_down_mirror": {
+      "A": 6,
+      "N": 131
+    },
+    "drag_yarn_ball_and_catch": {
+      "A": 7,
+      "N": 129
+    },
+    "drag_yarn_ball_and_catch_mirror": {
+      "A": 7,
+      "N": 124
+    },
+    "teaser1": {
+      "A": 6,
+      "N": 125
+    },
+    "teaser1_mirror": {
+      "A": 6,
+      "N": 134
+    },
+    "teaser2": {
+      "A": 6,
+      "N": 128
+    },
+    "teaser2_mirror": {
+      "A": 6,
+      "N": 127
+    },
+    "teaser3": {
+      "A": 6,
+      "N": 132
+    },
+    "walk_forward_to_screen": {
+      "A": 5,
+      "N": 124
+    }
+  },
+  "prompt_tokens_including_EOS": {
+    "min": 193,
+    "max": 227
+  },
+  "csv_sha256": "5533d3ad6dee6202e857d1778df82c07da0ee73a2c81a1986f4cac92df517daa",
+  "catalog_sha256": "026b97191d28ad5f69104e2e4be8e665ecc00c7580502492f157c6168a4ff0ca"
+}

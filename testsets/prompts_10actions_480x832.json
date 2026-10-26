@@ -1,0 +1,662 @@
+{
+  "version": 1,
+  "created_date": "2026-10-26",
+  "metadata_file": "metadata_80cases_480x832.csv",
+  "schema": [
+    "input_image",
+    "prompt",
+    "height",
+    "width",
+    "bucket"
+  ],
+  "prompt_format": "G_en + single space + A_en + single space + N_en",
+  "shared_components": "One G per cat across all ten actions. One A/N pair per action across all eight cats.",
+  "dimensions": {
+    "width": 480,
+    "height": 832,
+    "bucket": "portrait"
+  },
+  "action_count": 10,
+  "image_count": 8,
+  "case_count": 80,
+  "row_order": "Cat number ascending; within each cat use the action order listed here.",
+  "sources": {
+    "prompt_style": "data_train/metadata_1500_raw.csv",
+    "prompt_style_sha256": "0222f27c93ae752fecf959aeb305402820f8da615c84780505baccce72063d76",
+    "csv_schema": "testsets/metadata_6cases_480x832.csv",
+    "csv_schema_sha256": "e59a14deb87ee3dc34236ddce30ad9478f0082d5a5cf35cc89b15cedd16bd94e"
+  },
+  "notes": [
+    "Screen-left and screen-right refer to the viewer. Anatomical left and right belong to the cat.",
+    "The ten source action keys include four mirrored variants.",
+    "All eight source PNGs were already 480 pixels wide by 832 pixels high. Only two misleading legacy names were renamed. Image bytes were preserved.",
+    "Clean studio floor replaces a fixed gray-floor description to match both gray and white first-frame backgrounds.",
+    "No timestamps were added. The walk-toward-camera ending deliberately allows the lower legs to be cropped, matching the source action."
+  ],
+  "identities": [
+    {
+      "old_file": "test_01_orange_tabby_480x832.png",
+      "file": "test_01_orange_tabby_480x832.png",
+      "label_zh": "短毛橘色虎斑猫",
+      "G_en": "A short-haired orange cat with rich orange fur, narrow darker-orange tabby stripes, an M-shaped forehead marking, golden-amber eyes, a pink nose, a pale muzzle and chin, upright pointed ears, and a long ringed tail with a pale tip.",
+      "G_zh": "一只短毛橘猫，毛色浓橘，带细窄的深橘色虎斑条纹，额头有 M 形花纹，金琥珀色眼睛，粉色鼻子，口鼻部和下巴颜色较浅，尖耳直立，长尾带环状条纹和浅色尾尖。",
+      "sha256": "7898bd0a3b506695276c53a21ecc19cba2ea57dafb50a933e81be939a52b9c32",
+      "width": 480,
+      "height": 832,
+      "input_image": "images_480x832/test_01_orange_tabby_480x832.png"
+    },
+    {
+      "old_file": "test_02_blue_white_british_480x832.png",
+      "file": "test_02_blue_white_british_480x832.png",
+      "label_zh": "蓝白英国短毛猫",
+      "G_en": "A blue-and-white British Shorthair cat with a round face, full cheeks, dense blue-gray fur, copper-orange eyes, a dark nose, a narrow white blaze down the forehead and nose bridge, a white muzzle and chest, white lower legs and paws, upright ears, and a thick blue-gray tail.",
+      "G_zh": "一只蓝白英国短毛猫，脸圆、脸颊饱满，蓝灰色被毛浓密，铜橘色眼睛，深色鼻子，额头至鼻梁有一道窄白斑，口鼻部和胸部为白色，小腿下部和爪子为白色，耳朵直立，尾巴粗厚、呈蓝灰色。",
+      "sha256": "8b0d6c43f9c470f32ddf4f73def12c115ab6cf9b80ee2be70911ee44f3e9b3e9",
+      "width": 480,
+      "height": 832,
+      "input_image": "images_480x832/test_02_blue_white_british_480x832.png"
+    },
+    {
+      "old_file": "test_03_bicolor_ragdoll_480x832.png",
+      "file": "test_03_bicolor_ragdoll_480x832.png",
+      "label_zh": "海豹双色布偶猫",
+      "G_en": "A seal-bicolor Ragdoll cat with long silky cream-and-white fur, dark brown ears and eye-side facial patches, a white inverted-V blaze, blue eyes, a pink nose, a fluffy white chest, white legs and paws, and a large bushy dark brown tail.",
+      "G_zh": "一只海豹双色布偶猫，奶油色与白色长毛柔顺，耳朵和眼睛两侧的面部斑块为深棕色，脸上有倒 V 形白斑，蓝色眼睛，粉色鼻子，白色胸毛蓬松，腿和爪子为白色，深棕色尾巴粗大蓬松。",
+      "sha256": "8403707a7367e9f071be89df81de4d92f2c98e17b736e5470927deede6a649ef",
+      "width": 480,
+      "height": 832,
+      "input_image": "images_480x832/test_03_bicolor_ragdoll_480x832.png"
+    },
+    {
+      "old_file": "test_04_calico_480x832.png",
+      "file": "test_04_calico_480x832.png",
+      "label_zh": "短毛三花猫",
+      "G_en": "A short-haired calico cat with a white chest, belly and legs, an orange patch over its right ear and right side of the face, a black patch over its left ear and left side of the face, green eyes, a pink nose with a small orange spot beside it, upright ears, and an orange-and-black ringed tail with a black tip.",
+      "G_zh": "一只短毛三花猫，胸部、腹部和腿为白色，自身右耳及右侧脸部有橘色斑块，自身左耳及左侧脸部有黑色斑块，绿色眼睛，粉色鼻子旁有一个小橘斑，耳朵直立，尾巴带橘黑环纹、尾尖为黑色。",
+      "sha256": "f26586429d6440f9f2dc84cc8ca727b81ce7777b4485a2dea02ebd488bb737c7",
+      "width": 480,
+      "height": 832,
+      "input_image": "images_480x832/test_04_calico_480x832.png"
+    },
+    {
+      "old_file": "test_05_tuxedo_480x832.png",
+      "file": "test_05_tuxedo_480x832.png",
+      "label_zh": "黑白燕尾服猫",
+      "G_en": "A short-haired black-and-white tuxedo cat with sleek black fur, golden-yellow eyes, a narrow white stripe down the nose bridge, a pink-and-black nose, a white muzzle, chin, chest and belly, white paws, upright pointed ears, and a long black tail with a small white tip.",
+      "G_zh": "一只短毛黑白燕尾服猫，黑色被毛顺滑，金黄色眼睛，鼻梁有一道窄白条纹，鼻子带粉色和黑色，口鼻部、下巴、胸部和腹部为白色，爪子为白色，尖耳直立，黑色长尾带一小段白色尾尖。",
+      "sha256": "4f5f311f070b93c6b02fbc13084df5a5c16b638bbf5f04e2ad6b222890e4eff7",
+      "width": 480,
+      "height": 832,
+      "input_image": "images_480x832/test_05_tuxedo_480x832.png"
+    },
+    {
+      "old_file": "test_06_longhair_orange_white_480x832.png",
+      "file": "test_06_longhair_orange_white_480x832.png",
+      "label_zh": "浓红橘白长毛猫",
+      "G_en": "A long-haired orange-and-white cat with rich reddish-orange tabby fur over the ears, crown, cheeks, back and flanks, golden-amber eyes, a pink nose, a white central facial blaze and muzzle, a large fluffy white chest, white belly and paws, upright pointed ears, and a long bushy orange tail.",
+      "G_zh": "一只长毛橘白猫，耳朵、头顶、脸颊、背部和身体两侧覆盖浓郁的红橘色虎斑毛，金琥珀色眼睛，粉色鼻子，脸部中央白斑和口鼻部为白色，胸前白毛浓密蓬松，腹部和爪子为白色，尖耳直立，橘色长尾蓬松。",
+      "sha256": "2ff6c27f684df0d5faaed285c3eb94ab9982eb780a6c5f40334ad0582b88359b",
+      "width": 480,
+      "height": 832,
+      "input_image": "images_480x832/test_06_longhair_orange_white_480x832.png"
+    },
+    {
+      "old_file": "siamese_cat_832x480_no_distortion.png",
+      "file": "test_07_seal_point_siamese_480x832.png",
+      "label_zh": "海豹重点色暹罗猫",
+      "G_en": "A short-haired seal-point Siamese cat with a cream-colored body, a dark brown facial mask, dark brown ears, lower legs, paws and tail, blue eyes, a dark nose, a slender face, large upright pointed ears, and a long curved tail.",
+      "G_zh": "一只短毛海豹重点色暹罗猫，身体为奶油色，面部面罩、耳朵、小腿下部、爪子和尾巴为深棕色，蓝色眼睛，深色鼻子，脸型修长，大尖耳直立，长尾自然弯曲。",
+      "sha256": "c883571351faa84141881b232b688d22a13f2f719d26a04e238cc635101d175f",
+      "width": 480,
+      "height": 832,
+      "input_image": "images_480x832/test_07_seal_point_siamese_480x832.png"
+    },
+    {
+      "old_file": "tabby_cat_832x480_no_distortion.png",
+      "file": "test_08_brown_mackerel_tabby_480x832.png",
+      "label_zh": "棕色鱼骨纹狸花猫",
+      "G_en": "A short-haired brown tabby cat with warm brown fur, bold black stripes across the face, chest and legs, an M-shaped forehead marking, yellow-green eyes, a brownish-pink nose, a pale muzzle and chin, upright pointed ears, and a long black-ringed tail with a black tip.",
+      "G_zh": "一只短毛棕色狸花猫，棕色被毛偏暖，脸部、胸部和四肢有清晰的黑色条纹，额头有 M 形花纹，黄绿色眼睛，棕粉色鼻子，口鼻部和下巴颜色较浅，尖耳直立，长尾带黑色环纹、尾尖为黑色。",
+      "sha256": "74b58332d24cc0c9d118eed378e6d79df6e3e924d2fba031f228fed763298904",
+      "width": 480,
+      "height": 832,
+      "input_image": "images_480x832/test_08_brown_mackerel_tabby_480x832.png"
+    }
+  ],
+  "actions": [
+    {
+      "key": "curl_up_and_lie_down",
+      "A_en": "Curl up and lie down.",
+      "N_en": "Facing a fixed camera, the cat sits on a clean studio floor. It lowers its head and turns its head and shoulders toward screen-left. It gathers its forepaws, bends its forelegs and lowers its chest and hindquarters, curling into a compact resting shape with its head on screen-left and rump on screen-right. Its tail sweeps around the front of its body as it rests its chin on its gathered forepaws. It closes its eyes and remains curled up through the end.",
+      "A_zh": "蜷起身体躺下。",
+      "N_zh": "猫咪坐在干净的棚拍地面上，面对固定相机。它低下头，将头部和肩膀转向画面左侧。它收拢前爪，弯曲前腿，降低胸部和后躯，蜷成紧凑的休息姿势，头在画面左侧、臀部在画面右侧。尾巴从身体前方绕过，它将下巴放在收拢的前爪上。它闭上眼睛，保持蜷卧姿势直到结束。"
+    },
+    {
+      "key": "curl_up_and_lie_down_mirror",
+      "A_en": "Curl up and lie down.",
+      "N_en": "Facing a fixed camera, the cat sits on a clean studio floor. It lowers its head, turns toward screen-right and shifts its forepaws in that direction. It bends its forelegs and lowers its chest and hindquarters, curling into a compact resting shape with its head on screen-right and rump on screen-left. Its tail swings from screen-right around the front of its body. It gathers its forepaws beneath its head, rests its cheek on them and closes its eyes, holding the curled resting pose through the end.",
+      "A_zh": "蜷起身体躺下。",
+      "N_zh": "猫咪坐在干净的棚拍地面上，面对固定相机。它低下头，转向画面右侧，并将前爪移向同一方向。它弯曲前腿，降低胸部和后躯，蜷成紧凑的休息姿势，头在画面右侧、臀部在画面左侧。尾巴从画面右侧摆动，绕过身体前方。它把前爪收在头下，将脸颊枕在前爪上，闭上眼睛，保持蜷卧姿势直到结束。"
+    },
+    {
+      "key": "drag_yarn_ball_and_catch",
+      "A_en": "Pounce and catch the ball.",
+      "N_en": "Seated on a clean studio floor before a fixed camera, the cat watches a pink yarn ball roll across the foreground from screen-left toward screen-right. It follows the ball with its gaze, leans forward and lowers its shoulders into a crouch. It pushes off with its hind legs and pounces forward, extending both forepaws. Its paws land on either side of the ball and close around it, stopping it. It holds the ball between its forepaws with its head lowered, hindquarters raised and tail curved upward through the end.",
+      "A_zh": "扑上前抓住球。",
+      "N_zh": "猫咪坐在干净的棚拍地面上，面对固定相机，注视一个粉色毛线球从画面左侧向右侧滚过前景。它用目光追随毛线球，身体前倾，降低肩膀进入伏蹲姿势。它用后腿蹬地，伸出双前爪向前扑去。前爪落在毛线球两侧，合拢抓住并止住球。它低着头、抬起后躯、尾巴向上弯曲，将球夹在双前爪间直到结束。"
+    },
+    {
+      "key": "drag_yarn_ball_and_catch_mirror",
+      "A_en": "Pounce and catch the ball.",
+      "N_en": "Seated on a clean studio floor before a fixed camera, the cat watches a pink yarn ball roll across the foreground from screen-right toward screen-left. It tracks the ball with its gaze, lowers its head and shoulders and leans forward. It pushes off with its hind legs and pounces forward toward screen-left, extending both forepaws. Its paws land around the ball and close together to stop and hold it. It remains standing over the ball with its head lowered, hindquarters raised and tail curving upward through the end.",
+      "A_zh": "扑上前抓住球。",
+      "N_zh": "猫咪坐在干净的棚拍地面上，面对固定相机，注视一个粉色毛线球从画面右侧向左侧滚过前景。它用目光追踪毛线球，降低头部和肩膀，身体前倾。它用后腿蹬地，伸出双前爪，朝画面左侧向前扑去。前爪落在球的周围，合拢止住并抓牢球。它站在球的上方，低着头、抬起后躯、尾巴向上弯曲，保持到结束。"
+    },
+    {
+      "key": "teaser1",
+      "A_en": "Seated toy batting.",
+      "N_en": "Seated on a clean studio floor before a fixed camera, the cat watches a feather wand extend from screen-right before its chest. Its eyes and head follow the feathers upward toward screen-right. It lifts its own left forepaw, visible on screen-right, reaches up and swats, retracts the paw, then reaches up for a second swat. Its other forepaw stays planted and its hindquarters remain seated. It lowers the raised paw to the floor and keeps watching the toy at upper screen-right through the end.",
+      "A_zh": "坐姿拍打玩具。",
+      "N_zh": "猫咪坐在干净的棚拍地面上，面对固定相机，注视从画面右侧伸到胸前的羽毛逗猫棒。它的眼睛和头部跟随羽毛向画面右上方移动。它抬起自身左前爪，也就是画面右侧的前爪，向上伸爪拍打，收回前爪，再次伸爪完成第二次拍打。另一只前爪始终着地，后躯保持坐姿。它把抬起的前爪放回地面，继续注视画面右上方的玩具直到结束。"
+    },
+    {
+      "key": "teaser1_mirror",
+      "A_en": "Seated toy batting.",
+      "N_en": "Seated on a clean studio floor before a fixed camera, the cat watches a feather wand extend from screen-left before its chest and face. Its eyes and head follow the feathers upward toward screen-left. It raises its own right forepaw, visible on screen-left, bends its wrist and reaches upward toward the feathers in a sustained reaching and batting motion. Its other forepaw stays planted and its hindquarters remain seated. It draws the raised paw back to the floor and holds its seated pose, watching the toy at screen-left through the end.",
+      "A_zh": "坐姿拍打玩具。",
+      "N_zh": "猫咪坐在干净的棚拍地面上，面对固定相机，注视从画面左侧伸到胸前和脸前的羽毛逗猫棒。它的眼睛和头部跟随羽毛向画面左上方移动。它抬起自身右前爪，也就是画面左侧的前爪，弯曲腕部，持续向上伸爪并拍打羽毛。另一只前爪始终着地，后躯保持坐姿。它把抬起的前爪收回地面，保持坐姿，注视画面左侧的玩具直到结束。"
+    },
+    {
+      "key": "teaser2",
+      "A_en": "Bat and follow the toy.",
+      "N_en": "Seated on a clean studio floor before a fixed camera, the cat watches a feather wand enter from screen-right. It raises its own right forepaw on screen-left and reaches across its chest, making repeated short swats while the other forepaw supports it. As the toy retreats toward upper screen-right, it lowers the paw, leans forward and stands on all four legs. It takes a few short steps diagonally forward toward screen-right, its tail curving upward. It stops with its head raised, watching the toy beyond the upper-right edge.",
+      "A_zh": "拍打并跟随玩具。",
+      "N_zh": "猫咪坐在干净的棚拍地面上，面对固定相机，注视从画面右侧进入的羽毛逗猫棒。它抬起画面左侧的自身右前爪，横过胸前连续做短促拍打，另一只前爪支撑身体。当玩具退向画面右上方时，它放下前爪，身体前倾，四肢站起。它斜向画面右前方迈出几小步，尾巴向上弯曲。它抬头停下，注视越过画面右上边缘的玩具。"
+    },
+    {
+      "key": "teaser2_mirror",
+      "A_en": "Bat and follow the toy.",
+      "N_en": "Seated on a clean studio floor before a fixed camera, the cat watches a feather wand enter from screen-left. It raises its own left forepaw on screen-right and reaches across its chest, making repeated short swats while the other forepaw stays planted. It lowers the paw, shifts forward and stands on all four legs. It follows the toy with a few short steps diagonally forward toward screen-left, its tail curving high. It finishes standing with its head raised, watching the feathers still visible just before its face on screen-left.",
+      "A_zh": "拍打并跟随玩具。",
+      "N_zh": "猫咪坐在干净的棚拍地面上，面对固定相机，注视从画面左侧进入的羽毛逗猫棒。它抬起画面右侧的自身左前爪，横过胸前连续做短促拍打，另一只前爪保持着地。它放下前爪，重心前移，四肢站起。它跟随玩具斜向画面左前方迈出几小步，尾巴高高弯起。它最后抬头站立，注视仍在画面左侧、紧邻脸前可见的羽毛。"
+    },
+    {
+      "key": "teaser3",
+      "A_en": "Two-paw toy grab.",
+      "N_en": "Seated on a clean studio floor facing a fixed camera, the cat watches a feather wand move up and down before its chest and face from screen-right. It straightens over its haunches, raises both forepaws and closes them around the feathers. Leaning forward, it pulls the toy down and plants both forepaws on the floor, pinning the feather end between them. After a brief hold, it releases the rising toy, shifts backward and sits down again. It ends seated with both forepaws grounded, watching the feathers before its nose.",
+      "A_zh": "双前爪抓住玩具。",
+      "N_zh": "猫咪坐在干净的棚拍地面上，面对固定相机，注视从画面右侧伸入、在胸前和脸前上下移动的羽毛逗猫棒。它在后腿支撑下挺直身体，抬起双前爪，将羽毛合拢抓住。它身体前倾，把玩具拉低，双前爪落到地面，把羽毛端压在两爪之间。短暂停留后，它松开正在上升的玩具，身体后移，再次坐下。它最后保持双前爪着地的坐姿，注视鼻子前方的羽毛。"
+    },
+    {
+      "key": "walk_forward_to_screen",
+      "A_en": "Walk toward the camera.",
+      "N_en": "Facing a fixed camera, the cat sits on a clean studio floor and pauses. It leans forward, places one forepaw ahead and raises its hindquarters to stand. It walks straight toward the camera, alternating its forepaws as its hind legs follow and keeping its face toward the lens. Its tail trails behind and sways gently as the cat grows larger in the frame. It slows and stops close to the camera, with its face and chest filling most of the view and lower legs partly cropped, remaining standing through the end.",
+      "A_zh": "朝相机走来。",
+      "N_zh": "猫咪坐在干净的棚拍地面上，面对固定相机短暂停留。它身体前倾，向前放下一只前爪，抬起后躯站起。它直线朝相机走来，前爪交替迈步，后腿随后跟进，脸部始终朝向镜头。尾巴拖在身后轻轻摆动，猫咪在画面中逐渐变大。它靠近相机后减速停下，脸部和胸部占据大部分画面，小腿部分被裁出画面，并保持站立直到结束。"
+    }
+  ],
+  "cases": [
+    {
+      "row_number": 1,
+      "image": "test_01_orange_tabby_480x832.png",
+      "action_key": "curl_up_and_lie_down"
+    },
+    {
+      "row_number": 2,
+      "image": "test_01_orange_tabby_480x832.png",
+      "action_key": "curl_up_and_lie_down_mirror"
+    },
+    {
+      "row_number": 3,
+      "image": "test_01_orange_tabby_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch"
+    },
+    {
+      "row_number": 4,
+      "image": "test_01_orange_tabby_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch_mirror"
+    },
+    {
+      "row_number": 5,
+      "image": "test_01_orange_tabby_480x832.png",
+      "action_key": "teaser1"
+    },
+    {
+      "row_number": 6,
+      "image": "test_01_orange_tabby_480x832.png",
+      "action_key": "teaser1_mirror"
+    },
+    {
+      "row_number": 7,
+      "image": "test_01_orange_tabby_480x832.png",
+      "action_key": "teaser2"
+    },
+    {
+      "row_number": 8,
+      "image": "test_01_orange_tabby_480x832.png",
+      "action_key": "teaser2_mirror"
+    },
+    {
+      "row_number": 9,
+      "image": "test_01_orange_tabby_480x832.png",
+      "action_key": "teaser3"
+    },
+    {
+      "row_number": 10,
+      "image": "test_01_orange_tabby_480x832.png",
+      "action_key": "walk_forward_to_screen"
+    },
+    {
+      "row_number": 11,
+      "image": "test_02_blue_white_british_480x832.png",
+      "action_key": "curl_up_and_lie_down"
+    },
+    {
+      "row_number": 12,
+      "image": "test_02_blue_white_british_480x832.png",
+      "action_key": "curl_up_and_lie_down_mirror"
+    },
+    {
+      "row_number": 13,
+      "image": "test_02_blue_white_british_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch"
+    },
+    {
+      "row_number": 14,
+      "image": "test_02_blue_white_british_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch_mirror"
+    },
+    {
+      "row_number": 15,
+      "image": "test_02_blue_white_british_480x832.png",
+      "action_key": "teaser1"
+    },
+    {
+      "row_number": 16,
+      "image": "test_02_blue_white_british_480x832.png",
+      "action_key": "teaser1_mirror"
+    },
+    {
+      "row_number": 17,
+      "image": "test_02_blue_white_british_480x832.png",
+      "action_key": "teaser2"
+    },
+    {
+      "row_number": 18,
+      "image": "test_02_blue_white_british_480x832.png",
+      "action_key": "teaser2_mirror"
+    },
+    {
+      "row_number": 19,
+      "image": "test_02_blue_white_british_480x832.png",
+      "action_key": "teaser3"
+    },
+    {
+      "row_number": 20,
+      "image": "test_02_blue_white_british_480x832.png",
+      "action_key": "walk_forward_to_screen"
+    },
+    {
+      "row_number": 21,
+      "image": "test_03_bicolor_ragdoll_480x832.png",
+      "action_key": "curl_up_and_lie_down"
+    },
+    {
+      "row_number": 22,
+      "image": "test_03_bicolor_ragdoll_480x832.png",
+      "action_key": "curl_up_and_lie_down_mirror"
+    },
+    {
+      "row_number": 23,
+      "image": "test_03_bicolor_ragdoll_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch"
+    },
+    {
+      "row_number": 24,
+      "image": "test_03_bicolor_ragdoll_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch_mirror"
+    },
+    {
+      "row_number": 25,
+      "image": "test_03_bicolor_ragdoll_480x832.png",
+      "action_key": "teaser1"
+    },
+    {
+      "row_number": 26,
+      "image": "test_03_bicolor_ragdoll_480x832.png",
+      "action_key": "teaser1_mirror"
+    },
+    {
+      "row_number": 27,
+      "image": "test_03_bicolor_ragdoll_480x832.png",
+      "action_key": "teaser2"
+    },
+    {
+      "row_number": 28,
+      "image": "test_03_bicolor_ragdoll_480x832.png",
+      "action_key": "teaser2_mirror"
+    },
+    {
+      "row_number": 29,
+      "image": "test_03_bicolor_ragdoll_480x832.png",
+      "action_key": "teaser3"
+    },
+    {
+      "row_number": 30,
+      "image": "test_03_bicolor_ragdoll_480x832.png",
+      "action_key": "walk_forward_to_screen"
+    },
+    {
+      "row_number": 31,
+      "image": "test_04_calico_480x832.png",
+      "action_key": "curl_up_and_lie_down"
+    },
+    {
+      "row_number": 32,
+      "image": "test_04_calico_480x832.png",
+      "action_key": "curl_up_and_lie_down_mirror"
+    },
+    {
+      "row_number": 33,
+      "image": "test_04_calico_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch"
+    },
+    {
+      "row_number": 34,
+      "image": "test_04_calico_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch_mirror"
+    },
+    {
+      "row_number": 35,
+      "image": "test_04_calico_480x832.png",
+      "action_key": "teaser1"
+    },
+    {
+      "row_number": 36,
+      "image": "test_04_calico_480x832.png",
+      "action_key": "teaser1_mirror"
+    },
+    {
+      "row_number": 37,
+      "image": "test_04_calico_480x832.png",
+      "action_key": "teaser2"
+    },
+    {
+      "row_number": 38,
+      "image": "test_04_calico_480x832.png",
+      "action_key": "teaser2_mirror"
+    },
+    {
+      "row_number": 39,
+      "image": "test_04_calico_480x832.png",
+      "action_key": "teaser3"
+    },
+    {
+      "row_number": 40,
+      "image": "test_04_calico_480x832.png",
+      "action_key": "walk_forward_to_screen"
+    },
+    {
+      "row_number": 41,
+      "image": "test_05_tuxedo_480x832.png",
+      "action_key": "curl_up_and_lie_down"
+    },
+    {
+      "row_number": 42,
+      "image": "test_05_tuxedo_480x832.png",
+      "action_key": "curl_up_and_lie_down_mirror"
+    },
+    {
+      "row_number": 43,
+      "image": "test_05_tuxedo_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch"
+    },
+    {
+      "row_number": 44,
+      "image": "test_05_tuxedo_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch_mirror"
+    },
+    {
+      "row_number": 45,
+      "image": "test_05_tuxedo_480x832.png",
+      "action_key": "teaser1"
+    },
+    {
+      "row_number": 46,
+      "image": "test_05_tuxedo_480x832.png",
+      "action_key": "teaser1_mirror"
+    },
+    {
+      "row_number": 47,
+      "image": "test_05_tuxedo_480x832.png",
+      "action_key": "teaser2"
+    },
+    {
+      "row_number": 48,
+      "image": "test_05_tuxedo_480x832.png",
+      "action_key": "teaser2_mirror"
+    },
+    {
+      "row_number": 49,
+      "image": "test_05_tuxedo_480x832.png",
+      "action_key": "teaser3"
+    },
+    {
+      "row_number": 50,
+      "image": "test_05_tuxedo_480x832.png",
+      "action_key": "walk_forward_to_screen"
+    },
+    {
+      "row_number": 51,
+      "image": "test_06_longhair_orange_white_480x832.png",
+      "action_key": "curl_up_and_lie_down"
+    },
+    {
+      "row_number": 52,
+      "image": "test_06_longhair_orange_white_480x832.png",
+      "action_key": "curl_up_and_lie_down_mirror"
+    },
+    {
+      "row_number": 53,
+      "image": "test_06_longhair_orange_white_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch"
+    },
+    {
+      "row_number": 54,
+      "image": "test_06_longhair_orange_white_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch_mirror"
+    },
+    {
+      "row_number": 55,
+      "image": "test_06_longhair_orange_white_480x832.png",
+      "action_key": "teaser1"
+    },
+    {
+      "row_number": 56,
+      "image": "test_06_longhair_orange_white_480x832.png",
+      "action_key": "teaser1_mirror"
+    },
+    {
+      "row_number": 57,
+      "image": "test_06_longhair_orange_white_480x832.png",
+      "action_key": "teaser2"
+    },
+    {
+      "row_number": 58,
+      "image": "test_06_longhair_orange_white_480x832.png",
+      "action_key": "teaser2_mirror"
+    },
+    {
+      "row_number": 59,
+      "image": "test_06_longhair_orange_white_480x832.png",
+      "action_key": "teaser3"
+    },
+    {
+      "row_number": 60,
+      "image": "test_06_longhair_orange_white_480x832.png",
+      "action_key": "walk_forward_to_screen"
+    },
+    {
+      "row_number": 61,
+      "image": "test_07_seal_point_siamese_480x832.png",
+      "action_key": "curl_up_and_lie_down"
+    },
+    {
+      "row_number": 62,
+      "image": "test_07_seal_point_siamese_480x832.png",
+      "action_key": "curl_up_and_lie_down_mirror"
+    },
+    {
+      "row_number": 63,
+      "image": "test_07_seal_point_siamese_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch"
+    },
+    {
+      "row_number": 64,
+      "image": "test_07_seal_point_siamese_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch_mirror"
+    },
+    {
+      "row_number": 65,
+      "image": "test_07_seal_point_siamese_480x832.png",
+      "action_key": "teaser1"
+    },
+    {
+      "row_number": 66,
+      "image": "test_07_seal_point_siamese_480x832.png",
+      "action_key": "teaser1_mirror"
+    },
+    {
+      "row_number": 67,
+      "image": "test_07_seal_point_siamese_480x832.png",
+      "action_key": "teaser2"
+    },
+    {
+      "row_number": 68,
+      "image": "test_07_seal_point_siamese_480x832.png",
+      "action_key": "teaser2_mirror"
+    },
+    {
+      "row_number": 69,
+      "image": "test_07_seal_point_siamese_480x832.png",
+      "action_key": "teaser3"
+    },
+    {
+      "row_number": 70,
+      "image": "test_07_seal_point_siamese_480x832.png",
+      "action_key": "walk_forward_to_screen"
+    },
+    {
+      "row_number": 71,
+      "image": "test_08_brown_mackerel_tabby_480x832.png",
+      "action_key": "curl_up_and_lie_down"
+    },
+    {
+      "row_number": 72,
+      "image": "test_08_brown_mackerel_tabby_480x832.png",
+      "action_key": "curl_up_and_lie_down_mirror"
+    },
+    {
+      "row_number": 73,
+      "image": "test_08_brown_mackerel_tabby_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch"
+    },
+    {
+      "row_number": 74,
+      "image": "test_08_brown_mackerel_tabby_480x832.png",
+      "action_key": "drag_yarn_ball_and_catch_mirror"
+    },
+    {
+      "row_number": 75,
+      "image": "test_08_brown_mackerel_tabby_480x832.png",
+      "action_key": "teaser1"
+    },
+    {
+      "row_number": 76,
+      "image": "test_08_brown_mackerel_tabby_480x832.png",
+      "action_key": "teaser1_mirror"
+    },
+    {
+      "row_number": 77,
+      "image": "test_08_brown_mackerel_tabby_480x832.png",
+      "action_key": "teaser2"
+    },
+    {
+      "row_number": 78,
+      "image": "test_08_brown_mackerel_tabby_480x832.png",
+      "action_key": "teaser2_mirror"
+    },
+    {
+      "row_number": 79,
+      "image": "test_08_brown_mackerel_tabby_480x832.png",
+      "action_key": "teaser3"
+    },
+    {
+      "row_number": 80,
+      "image": "test_08_brown_mackerel_tabby_480x832.png",
+      "action_key": "walk_forward_to_screen"
+    }
+  ],
+  "bilingual_examples": [
+    {
+      "action_key": "curl_up_and_lie_down",
+      "input_image": "images_480x832/test_06_longhair_orange_white_480x832.png",
+      "prompt_en": "A long-haired orange-and-white cat with rich reddish-orange tabby fur over the ears, crown, cheeks, back and flanks, golden-amber eyes, a pink nose, a white central facial blaze and muzzle, a large fluffy white chest, white belly and paws, upright pointed ears, and a long bushy orange tail. Curl up and lie down. Facing a fixed camera, the cat sits on a clean studio floor. It lowers its head and turns its head and shoulders toward screen-left. It gathers its forepaws, bends its forelegs and lowers its chest and hindquarters, curling into a compact resting shape with its head on screen-left and rump on screen-right. Its tail sweeps around the front of its body as it rests its chin on its gathered forepaws. It closes its eyes and remains curled up through the end.",
+      "prompt_zh": "一只长毛橘白猫，耳朵、头顶、脸颊、背部和身体两侧覆盖浓郁的红橘色虎斑毛，金琥珀色眼睛，粉色鼻子，脸部中央白斑和口鼻部为白色，胸前白毛浓密蓬松，腹部和爪子为白色，尖耳直立，橘色长尾蓬松。蜷起身体躺下。猫咪坐在干净的棚拍地面上，面对固定相机。它低下头，将头部和肩膀转向画面左侧。它收拢前爪，弯曲前腿，降低胸部和后躯，蜷成紧凑的休息姿势，头在画面左侧、臀部在画面右侧。尾巴从身体前方绕过，它将下巴放在收拢的前爪上。它闭上眼睛，保持蜷卧姿势直到结束。"
+    },
+    {
+      "action_key": "curl_up_and_lie_down_mirror",
+      "input_image": "images_480x832/test_06_longhair_orange_white_480x832.png",
+      "prompt_en": "A long-haired orange-and-white cat with rich reddish-orange tabby fur over the ears, crown, cheeks, back and flanks, golden-amber eyes, a pink nose, a white central facial blaze and muzzle, a large fluffy white chest, white belly and paws, upright pointed ears, and a long bushy orange tail. Curl up and lie down. Facing a fixed camera, the cat sits on a clean studio floor. It lowers its head, turns toward screen-right and shifts its forepaws in that direction. It bends its forelegs and lowers its chest and hindquarters, curling into a compact resting shape with its head on screen-right and rump on screen-left. Its tail swings from screen-right around the front of its body. It gathers its forepaws beneath its head, rests its cheek on them and closes its eyes, holding the curled resting pose through the end.",
+      "prompt_zh": "一只长毛橘白猫，耳朵、头顶、脸颊、背部和身体两侧覆盖浓郁的红橘色虎斑毛，金琥珀色眼睛，粉色鼻子，脸部中央白斑和口鼻部为白色，胸前白毛浓密蓬松，腹部和爪子为白色，尖耳直立，橘色长尾蓬松。蜷起身体躺下。猫咪坐在干净的棚拍地面上，面对固定相机。它低下头，转向画面右侧，并将前爪移向同一方向。它弯曲前腿，降低胸部和后躯，蜷成紧凑的休息姿势，头在画面右侧、臀部在画面左侧。尾巴从画面右侧摆动，绕过身体前方。它把前爪收在头下，将脸颊枕在前爪上，闭上眼睛，保持蜷卧姿势直到结束。"
+    },
+    {
+      "action_key": "drag_yarn_ball_and_catch",
+      "input_image": "images_480x832/test_06_longhair_orange_white_480x832.png",
+      "prompt_en": "A long-haired orange-and-white cat with rich reddish-orange tabby fur over the ears, crown, cheeks, back and flanks, golden-amber eyes, a pink nose, a white central facial blaze and muzzle, a large fluffy white chest, white belly and paws, upright pointed ears, and a long bushy orange tail. Pounce and catch the ball. Seated on a clean studio floor before a fixed camera, the cat watches a pink yarn ball roll across the foreground from screen-left toward screen-right. It follows the ball with its gaze, leans forward and lowers its shoulders into a crouch. It pushes off with its hind legs and pounces forward, extending both forepaws. Its paws land on either side of the ball and close around it, stopping it. It holds the ball between its forepaws with its head lowered, hindquarters raised and tail curved upward through the end.",
+      "prompt_zh": "一只长毛橘白猫，耳朵、头顶、脸颊、背部和身体两侧覆盖浓郁的红橘色虎斑毛，金琥珀色眼睛，粉色鼻子，脸部中央白斑和口鼻部为白色，胸前白毛浓密蓬松，腹部和爪子为白色，尖耳直立，橘色长尾蓬松。扑上前抓住球。猫咪坐在干净的棚拍地面上，面对固定相机，注视一个粉色毛线球从画面左侧向右侧滚过前景。它用目光追随毛线球，身体前倾，降低肩膀进入伏蹲姿势。它用后腿蹬地，伸出双前爪向前扑去。前爪落在毛线球两侧，合拢抓住并止住球。它低着头、抬起后躯、尾巴向上弯曲，将球夹在双前爪间直到结束。"
+    },
+    {
+      "action_key": "drag_yarn_ball_and_catch_mirror",
+      "input_image": "images_480x832/test_06_longhair_orange_white_480x832.png",
+      "prompt_en": "A long-haired orange-and-white cat with rich reddish-orange tabby fur over the ears, crown, cheeks, back and flanks, golden-amber eyes, a pink nose, a white central facial blaze and muzzle, a large fluffy white chest, white belly and paws, upright pointed ears, and a long bushy orange tail. Pounce and catch the ball. Seated on a clean studio floor before a fixed camera, the cat watches a pink yarn ball roll across the foreground from screen-right toward screen-left. It tracks the ball with its gaze, lowers its head and shoulders and leans forward. It pushes off with its hind legs and pounces forward toward screen-left, extending both forepaws. Its paws land around the ball and close together to stop and hold it. It remains standing over the ball with its head lowered, hindquarters raised and tail curving upward through the end.",
+      "prompt_zh": "一只长毛橘白猫，耳朵、头顶、脸颊、背部和身体两侧覆盖浓郁的红橘色虎斑毛，金琥珀色眼睛，粉色鼻子，脸部中央白斑和口鼻部为白色，胸前白毛浓密蓬松，腹部和爪子为白色，尖耳直立，橘色长尾蓬松。扑上前抓住球。猫咪坐在干净的棚拍地面上，面对固定相机，注视一个粉色毛线球从画面右侧向左侧滚过前景。它用目光追踪毛线球，降低头部和肩膀，身体前倾。它用后腿蹬地，伸出双前爪，朝画面左侧向前扑去。前爪落在球的周围，合拢止住并抓牢球。它站在球的上方，低着头、抬起后躯、尾巴向上弯曲，保持到结束。"
+    },
+    {
+      "action_key": "teaser1",
+      "input_image": "images_480x832/test_06_longhair_orange_white_480x832.png",
+      "prompt_en": "A long-haired orange-and-white cat with rich reddish-orange tabby fur over the ears, crown, cheeks, back and flanks, golden-amber eyes, a pink nose, a white central facial blaze and muzzle, a large fluffy white chest, white belly and paws, upright pointed ears, and a long bushy orange tail. Seated toy batting. Seated on a clean studio floor before a fixed camera, the cat watches a feather wand extend from screen-right before its chest. Its eyes and head follow the feathers upward toward screen-right. It lifts its own left forepaw, visible on screen-right, reaches up and swats, retracts the paw, then reaches up for a second swat. Its other forepaw stays planted and its hindquarters remain seated. It lowers the raised paw to the floor and keeps watching the toy at upper screen-right through the end.",
+      "prompt_zh": "一只长毛橘白猫，耳朵、头顶、脸颊、背部和身体两侧覆盖浓郁的红橘色虎斑毛，金琥珀色眼睛，粉色鼻子，脸部中央白斑和口鼻部为白色，胸前白毛浓密蓬松，腹部和爪子为白色，尖耳直立，橘色长尾蓬松。坐姿拍打玩具。猫咪坐在干净的棚拍地面上，面对固定相机，注视从画面右侧伸到胸前的羽毛逗猫棒。它的眼睛和头部跟随羽毛向画面右上方移动。它抬起自身左前爪，也就是画面右侧的前爪，向上伸爪拍打，收回前爪，再次伸爪完成第二次拍打。另一只前爪始终着地，后躯保持坐姿。它把抬起的前爪放回地面，继续注视画面右上方的玩具直到结束。"
+    },
+    {
+      "action_key": "teaser1_mirror",
+      "input_image": "images_480x832/test_06_longhair_orange_white_480x832.png",
+      "prompt_en": "A long-haired orange-and-white cat with rich reddish-orange tabby fur over the ears, crown, cheeks, back and flanks, golden-amber eyes, a pink nose, a white central facial blaze and muzzle, a large fluffy white chest, white belly and paws, upright pointed ears, and a long bushy orange tail. Seated toy batting. Seated on a clean studio floor before a fixed camera, the cat watches a feather wand extend from screen-left before its chest and face. Its eyes and head follow the feathers upward toward screen-left. It raises its own right forepaw, visible on screen-left, bends its wrist and reaches upward toward the feathers in a sustained reaching and batting motion. Its other forepaw stays planted and its hindquarters remain seated. It draws the raised paw back to the floor and holds its seated pose, watching the toy at screen-left through the end.",
+      "prompt_zh": "一只长毛橘白猫，耳朵、头顶、脸颊、背部和身体两侧覆盖浓郁的红橘色虎斑毛，金琥珀色眼睛，粉色鼻子，脸部中央白斑和口鼻部为白色，胸前白毛浓密蓬松，腹部和爪子为白色，尖耳直立，橘色长尾蓬松。坐姿拍打玩具。猫咪坐在干净的棚拍地面上，面对固定相机，注视从画面左侧伸到胸前和脸前的羽毛逗猫棒。它的眼睛和头部跟随羽毛向画面左上方移动。它抬起自身右前爪，也就是画面左侧的前爪，弯曲腕部，持续向上伸爪并拍打羽毛。另一只前爪始终着地，后躯保持坐姿。它把抬起的前爪收回地面，保持坐姿，注视画面左侧的玩具直到结束。"
+    },
+    {
+      "action_key": "teaser2",
+      "input_image": "images_480x832/test_06_longhair_orange_white_480x832.png",
+      "prompt_en": "A long-haired orange-and-white cat with rich reddish-orange tabby fur over the ears, crown, cheeks, back and flanks, golden-amber eyes, a pink nose, a white central facial blaze and muzzle, a large fluffy white chest, white belly and paws, upright pointed ears, and a long bushy orange tail. Bat and follow the toy. Seated on a clean studio floor before a fixed camera, the cat watches a feather wand enter from screen-right. It raises its own right forepaw on screen-left and reaches across its chest, making repeated short swats while the other forepaw supports it. As the toy retreats toward upper screen-right, it lowers the paw, leans forward and stands on all four legs. It takes a few short steps diagonally forward toward screen-right, its tail curving upward. It stops with its head raised, watching the toy beyond the upper-right edge.",
+      "prompt_zh": "一只长毛橘白猫，耳朵、头顶、脸颊、背部和身体两侧覆盖浓郁的红橘色虎斑毛，金琥珀色眼睛，粉色鼻子，脸部中央白斑和口鼻部为白色，胸前白毛浓密蓬松，腹部和爪子为白色，尖耳直立，橘色长尾蓬松。拍打并跟随玩具。猫咪坐在干净的棚拍地面上，面对固定相机，注视从画面右侧进入的羽毛逗猫棒。它抬起画面左侧的自身右前爪，横过胸前连续做短促拍打，另一只前爪支撑身体。当玩具退向画面右上方时，它放下前爪，身体前倾，四肢站起。它斜向画面右前方迈出几小步，尾巴向上弯曲。它抬头停下，注视越过画面右上边缘的玩具。"
+    },
+    {
+      "action_key": "teaser2_mirror",
+      "input_image": "images_480x832/test_06_longhair_orange_white_480x832.png",
+      "prompt_en": "A long-haired orange-and-white cat with rich reddish-orange tabby fur over the ears, crown, cheeks, back and flanks, golden-amber eyes, a pink nose, a white central facial blaze and muzzle, a large fluffy white chest, white belly and paws, upright pointed ears, and a long bushy orange tail. Bat and follow the toy. Seated on a clean studio floor before a fixed camera, the cat watches a feather wand enter from screen-left. It raises its own left forepaw on screen-right and reaches across its chest, making repeated short swats while the other forepaw stays planted. It lowers the paw, shifts forward and stands on all four legs. It follows the toy with a few short steps diagonally forward toward screen-left, its tail curving high. It finishes standing with its head raised, watching the feathers still visible just before its face on screen-left.",
+      "prompt_zh": "一只长毛橘白猫，耳朵、头顶、脸颊、背部和身体两侧覆盖浓郁的红橘色虎斑毛，金琥珀色眼睛，粉色鼻子，脸部中央白斑和口鼻部为白色，胸前白毛浓密蓬松，腹部和爪子为白色，尖耳直立，橘色长尾蓬松。拍打并跟随玩具。猫咪坐在干净的棚拍地面上，面对固定相机，注视从画面左侧进入的羽毛逗猫棒。它抬起画面右侧的自身左前爪，横过胸前连续做短促拍打，另一只前爪保持着地。它放下前爪，重心前移，四肢站起。它跟随玩具斜向画面左前方迈出几小步，尾巴高高弯起。它最后抬头站立，注视仍在画面左侧、紧邻脸前可见的羽毛。"
+    },
+    {
+      "action_key": "teaser3",
+      "input_image": "images_480x832/test_06_longhair_orange_white_480x832.png",
+      "prompt_en": "A long-haired orange-and-white cat with rich reddish-orange tabby fur over the ears, crown, cheeks, back and flanks, golden-amber eyes, a pink nose, a white central facial blaze and muzzle, a large fluffy white chest, white belly and paws, upright pointed ears, and a long bushy orange tail. Two-paw toy grab. Seated on a clean studio floor facing a fixed camera, the cat watches a feather wand move up and down before its chest and face from screen-right. It straightens over its haunches, raises both forepaws and closes them around the feathers. Leaning forward, it pulls the toy down and plants both forepaws on the floor, pinning the feather end between them. After a brief hold, it releases the rising toy, shifts backward and sits down again. It ends seated with both forepaws grounded, watching the feathers before its nose.",
+      "prompt_zh": "一只长毛橘白猫，耳朵、头顶、脸颊、背部和身体两侧覆盖浓郁的红橘色虎斑毛，金琥珀色眼睛，粉色鼻子，脸部中央白斑和口鼻部为白色，胸前白毛浓密蓬松，腹部和爪子为白色，尖耳直立，橘色长尾蓬松。双前爪抓住玩具。猫咪坐在干净的棚拍地面上，面对固定相机，注视从画面右侧伸入、在胸前和脸前上下移动的羽毛逗猫棒。它在后腿支撑下挺直身体，抬起双前爪，将羽毛合拢抓住。它身体前倾，把玩具拉低，双前爪落到地面，把羽毛端压在两爪之间。短暂停留后，它松开正在上升的玩具，身体后移，再次坐下。它最后保持双前爪着地的坐姿，注视鼻子前方的羽毛。"
+    },
+    {
+      "action_key": "walk_forward_to_screen",
+      "input_image": "images_480x832/test_06_longhair_orange_white_480x832.png",
+      "prompt_en": "A long-haired orange-and-white cat with rich reddish-orange tabby fur over the ears, crown, cheeks, back and flanks, golden-amber eyes, a pink nose, a white central facial blaze and muzzle, a large fluffy white chest, white belly and paws, upright pointed ears, and a long bushy orange tail. Walk toward the camera. Facing a fixed camera, the cat sits on a clean studio floor and pauses. It leans forward, places one forepaw ahead and raises its hindquarters to stand. It walks straight toward the camera, alternating its forepaws as its hind legs follow and keeping its face toward the lens. Its tail trails behind and sways gently as the cat grows larger in the frame. It slows and stops close to the camera, with its face and chest filling most of the view and lower legs partly cropped, remaining standing through the end.",
+      "prompt_zh": "一只长毛橘白猫，耳朵、头顶、脸颊、背部和身体两侧覆盖浓郁的红橘色虎斑毛，金琥珀色眼睛，粉色鼻子，脸部中央白斑和口鼻部为白色，胸前白毛浓密蓬松，腹部和爪子为白色，尖耳直立，橘色长尾蓬松。朝相机走来。猫咪坐在干净的棚拍地面上，面对固定相机短暂停留。它身体前倾，向前放下一只前爪，抬起后躯站起。它直线朝相机走来，前爪交替迈步，后腿随后跟进，脸部始终朝向镜头。尾巴拖在身后轻轻摆动，猫咪在画面中逐渐变大。它靠近相机后减速停下，脸部和胸部占据大部分画面，小腿部分被裁出画面，并保持站立直到结束。"
+    }
+  ]
+}
